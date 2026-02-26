@@ -5,5 +5,8 @@ from uuid import UUID
 
 @dataclass
 class ResolveViolationCommand:
+    """Data required to resolve an open violation."""
+
     violation_id: UUID
-    resolved_by: UUID
+    notes: str = ""
+    action_taken: str = ""

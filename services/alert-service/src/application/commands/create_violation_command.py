@@ -5,8 +5,11 @@ from uuid import UUID
 
 @dataclass
 class CreateViolationCommand:
+    """Data required to create a new threshold violation."""
+
     factory_id: UUID
+    sensor_id: UUID
     pollutant: str
     measured_value: float
-    threshold: float
+    permitted_value: float
     severity: str

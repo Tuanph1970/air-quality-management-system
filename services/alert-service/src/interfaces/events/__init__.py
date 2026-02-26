@@ -1,0 +1,1 @@
+"""Alert event interface layer."""

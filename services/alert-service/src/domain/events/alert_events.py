@@ -1,24 +1,21 @@
-"""Alert domain events."""
-from dataclasses import dataclass
-from uuid import UUID
+"""Alert domain events (re-exported from shared library).
 
+The canonical event definitions live in ``shared.events.alert_events``
+so that other bounded contexts can import them without depending on this
+service.  This module simply re-exports them for convenience within the
+alert service codebase.
 
-@dataclass
-class ViolationDetected:
-    violation_id: UUID = None
-    factory_id: UUID = None
-    pollutant: str = ""
-    severity: str = ""
+**Domain layer rule**: this module must NOT import from the application,
+infrastructure, or interface layers.
+"""
+from shared.events.alert_events import (  # noqa: F401
+    AlertConfigUpdated,
+    ViolationDetected,
+    ViolationResolved,
+)
 
-
-@dataclass
-class ViolationResolved:
-    violation_id: UUID = None
-    resolved_by: UUID = None
-
-
-@dataclass
-class AlertTriggered:
-    alert_id: UUID = None
-    factory_id: UUID = None
-    message: str = ""
+__all__ = [
+    "ViolationDetected",
+    "ViolationResolved",
+    "AlertConfigUpdated",
+]

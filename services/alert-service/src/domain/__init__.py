@@ -1,0 +1,1 @@
+# Alert Service — domain layer.
