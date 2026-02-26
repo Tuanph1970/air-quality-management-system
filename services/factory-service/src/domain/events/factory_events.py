@@ -1,24 +1,22 @@
-"""Factory domain events."""
-from dataclasses import dataclass
-from uuid import UUID
+"""Factory domain events — re-exported from the shared event library.
 
+The canonical event definitions live in ``shared.events.factory_events``
+so that both producers (this service) and consumers (other services) use
+the same classes.  This module simply re-exports them for convenience
+within the factory-service codebase.
+"""
+from shared.events.factory_events import (  # noqa: F401
+    FactoryCreated,
+    FactoryUpdated,
+    FactoryStatusChanged,
+    FactorySuspended,
+    FactoryResumed,
+)
 
-@dataclass
-class FactoryCreated:
-    factory_id: UUID = None
-    name: str = ""
-
-
-@dataclass
-class FactoryStatusChanged:
-    factory_id: UUID = None
-    old_status: str = ""
-    new_status: str = ""
-    reason: str = ""
-
-
-@dataclass
-class FactorySuspended:
-    factory_id: UUID = None
-    reason: str = ""
-    suspended_by: UUID = None
+__all__ = [
+    "FactoryCreated",
+    "FactoryUpdated",
+    "FactoryStatusChanged",
+    "FactorySuspended",
+    "FactoryResumed",
+]
