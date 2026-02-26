@@ -1,0 +1,11 @@
+"""AQI level enum."""
+from enum import Enum
+
+
+class AQILevel(str, Enum):
+    GOOD = "GOOD"
+    MODERATE = "MODERATE"
+    UNHEALTHY_SENSITIVE = "UNHEALTHY_SENSITIVE"
+    UNHEALTHY = "UNHEALTHY"
+    VERY_UNHEALTHY = "VERY_UNHEALTHY"
+    HAZARDOUS = "HAZARDOUS"

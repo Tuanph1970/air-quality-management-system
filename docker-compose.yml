@@ -1,0 +1,464 @@
+# =============================================================================
+# Air Quality Management System - Development Docker Compose
+# =============================================================================
+# Usage:
+#   docker-compose up -d                 # Start all services
+#   docker-compose up -d factory-service # Start single service + deps
+#   docker-compose logs -f api-gateway   # Tail logs
+#   docker-compose down -v               # Stop and remove volumes
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # INFRASTRUCTURE - Message Broker
+  # ===========================================================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: aqms-rabbitmq
+    hostname: aqms-rabbitmq
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-guest}
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # INFRASTRUCTURE - Databases
+  # ===========================================================================
+  factory-db:
+    image: postgres:15-alpine
+    container_name: aqms-factory-db
+    ports:
+      - "${FACTORY_DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: factory_db
+      POSTGRES_USER: ${DB_USER:-aqms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+    volumes:
+      - factory_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d factory_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  sensor-db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: aqms-sensor-db
+    ports:
+      - "${SENSOR_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: sensor_db
+      POSTGRES_USER: ${DB_USER:-aqms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+    volumes:
+      - sensor_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d sensor_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  alert-db:
+    image: postgres:15-alpine
+    container_name: aqms-alert-db
+    ports:
+      - "${ALERT_DB_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: alert_db
+      POSTGRES_USER: ${DB_USER:-aqms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+    volumes:
+      - alert_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d alert_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  user-db:
+    image: postgres:15-alpine
+    container_name: aqms-user-db
+    ports:
+      - "${USER_DB_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: ${DB_USER:-aqms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d user_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: aqms-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # MICROSERVICES
+  # ===========================================================================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: aqms-api-gateway
+    ports:
+      - "${API_GATEWAY_PORT:-8000}:8000"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=api-gateway
+      - SERVICE_PORT=8000
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
+      - FACTORY_SERVICE_URL=http://factory-service:8001
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - ALERT_SERVICE_URL=http://alert-service:8003
+      - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
+      - USER_SERVICE_URL=http://user-service:8005
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/api-gateway/src:/app/src
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      factory-service:
+        condition: service_healthy
+      sensor-service:
+        condition: service_healthy
+      alert-service:
+        condition: service_healthy
+      air-quality-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  factory-service:
+    build:
+      context: ./services/factory-service
+      dockerfile: Dockerfile
+    container_name: aqms-factory-service
+    ports:
+      - "${FACTORY_SERVICE_PORT:-8001}:8001"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=factory-service
+      - SERVICE_PORT=8001
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@factory-db:5432/factory_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/factory-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      factory-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  sensor-service:
+    build:
+      context: ./services/sensor-service
+      dockerfile: Dockerfile
+    container_name: aqms-sensor-service
+    ports:
+      - "${SENSOR_SERVICE_PORT:-8002}:8002"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=sensor-service
+      - SERVICE_PORT=8002
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@sensor-db:5432/sensor_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/sensor-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      sensor-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  alert-service:
+    build:
+      context: ./services/alert-service
+      dockerfile: Dockerfile
+    container_name: aqms-alert-service
+    ports:
+      - "${ALERT_SERVICE_PORT:-8003}:8003"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=alert-service
+      - SERVICE_PORT=8003
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@alert-db:5432/alert_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/alert-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      alert-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  air-quality-service:
+    build:
+      context: ./services/air-quality-service
+      dockerfile: Dockerfile
+    container_name: aqms-air-quality-service
+    ports:
+      - "${AIR_QUALITY_SERVICE_PORT:-8004}:8004"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=air-quality-service
+      - SERVICE_PORT=8004
+      - REDIS_URL=redis://redis:6379/0
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/air-quality-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: aqms-user-service
+    ports:
+      - "${USER_SERVICE_PORT:-8005}:8005"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=user-service
+      - SERVICE_PORT=8005
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@user-db:5432/user_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/user-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8005/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # FRONTEND - Vite dev server with hot-reload
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: aqms-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - VITE_API_URL=http://localhost:${API_GATEWAY_PORT:-8000}/api/v1
+      - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+# =============================================================================
+# VOLUMES - Named volumes for data persistence
+# =============================================================================
+volumes:
+  factory_db_data:
+    driver: local
+  sensor_db_data:
+    driver: local
+  alert_db_data:
+    driver: local
+  user_db_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  aqms-network:
+    driver: bridge
+    name: aqms-network
