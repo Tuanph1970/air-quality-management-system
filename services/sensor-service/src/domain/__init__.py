@@ -1,0 +1,1 @@
+"""Sensor service domain layer."""
