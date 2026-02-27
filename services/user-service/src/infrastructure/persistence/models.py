@@ -1,29 +1,49 @@
-"""SQLAlchemy models for user service."""
-from sqlalchemy import Column, String, Boolean, DateTime, ARRAY
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base
-import uuid
-from datetime import datetime
+"""SQLAlchemy ORM models for the user service."""
+from __future__ import annotations
 
-Base = declarative_base()
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from .database import Base
 
 
 class UserModel(Base):
+    """Persistence model for the ``users`` table."""
+
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String(255), unique=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(255), nullable=False)
-    role = Column(String(50), default="viewer")
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
-class RoleModel(Base):
-    __tablename__ = "roles"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(50), unique=True, nullable=False)
-    permissions = Column(ARRAY(String), default=[])
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(
+        String(255), nullable=False, unique=True, index=True
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="PUBLIC", index=True
+    )
+    organization: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

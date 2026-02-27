@@ -1,19 +1,20 @@
-"""User domain events."""
-from dataclasses import dataclass
-from uuid import UUID
+"""User domain events (re-exported from shared library).
 
+The canonical event definitions live in ``shared.events.user_events``
+so that other bounded contexts can import them without depending on
+this service. This module simply re-exports them for convenience.
 
-@dataclass
-class UserRegistered:
-    user_id: UUID = None
-    email: str = ""
+**Domain layer rule**: this module must NOT import from the application,
+infrastructure, or interface layers.
+"""
+from shared.events.user_events import (  # noqa: F401
+    UserRegistered,
+    UserPasswordChanged,
+    UserLoggedIn,
+)
 
-
-@dataclass
-class UserLoggedIn:
-    user_id: UUID = None
-
-
-@dataclass
-class UserDeactivated:
-    user_id: UUID = None
+__all__ = [
+    "UserRegistered",
+    "UserPasswordChanged",
+    "UserLoggedIn",
+]

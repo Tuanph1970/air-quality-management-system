@@ -1,19 +1,64 @@
-import React from 'react';
+import PropTypes from 'prop-types';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from './components/layout/AppLayout';
+import DashboardPage from './pages/DashboardPage';
+import AirQualityPage from './pages/AirQualityPage';
+import FactoriesPage from './pages/FactoriesPage';
+import SensorsPage from './pages/SensorsPage';
+import AlertsPage from './pages/AlertsPage';
+import MapPage from './pages/MapPage';
+import FactoryDetailPage from './pages/FactoryDetailPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
+import LoginPage from './pages/LoginPage';
+import NotFoundPage from './pages/NotFoundPage';
+import useAuthStore from './store/authStore';
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Air Quality Management System
-          </h1>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 px-4">
-        <p className="text-gray-600">Dashboard coming soon...</p>
-      </main>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected routes with layout */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="air-quality" element={<AirQualityPage />} />
+          <Route path="factories" element={<FactoriesPage />} />
+          <Route path="factories/:factoryId" element={<FactoryDetailPage />} />
+          <Route path="sensors" element={<SensorsPage />} />
+          <Route path="alerts" element={<AlertsPage />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
