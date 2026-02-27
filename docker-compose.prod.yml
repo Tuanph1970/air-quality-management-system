@@ -550,10 +550,19 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+        VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     image: aqms/frontend:${IMAGE_TAG:-latest}
     container_name: aqms-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -573,6 +582,7 @@ services:
         max-file: "5"
     networks:
       - aqms-public
+      - aqms-internal
 
 # =============================================================================
 # VOLUMES - Named volumes for persistent data
