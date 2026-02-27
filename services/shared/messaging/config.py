@@ -29,6 +29,8 @@ PREFETCH_COUNT: int = int(os.getenv("RABBITMQ_PREFETCH_COUNT", "10"))
 FACTORY_EXCHANGE = "factory.events"
 SENSOR_EXCHANGE = "sensor.events"
 ALERT_EXCHANGE = "alert.events"
+SATELLITE_EXCHANGE = "satellite.events"
+FUSION_EXCHANGE = "fusion.events"
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +54,17 @@ AQ_ALERT_EVENTS_QUEUE = "airquality.alert_handler"         # ← alert.violation
 
 # User Service queues  (minimal – mostly publishes, rarely consumes)
 USER_FACTORY_EVENTS_QUEUE = "user.factory_handler"         # ← factory.suspended (notify owner)
+
+# Remote Sensing Service queues
+RS_SENSOR_READINGS_QUEUE = "remotesensing.sensor_readings"  # ← sensor.reading.created
+RS_FACTORY_EVENTS_QUEUE = "remotesensing.factory_handler"   # ← factory.status.changed
+
+# Air Quality Service – satellite & fusion event queues
+AQ_SATELLITE_EVENTS_QUEUE = "airquality.satellite_handler"  # ← satellite.data.fetched
+AQ_FUSION_EVENTS_QUEUE = "airquality.fusion_handler"        # ← fusion.completed
+
+# Alert Service – fusion cross-validation queue
+ALERT_VALIDATION_QUEUE = "alert.validation_handler"          # ← validation.alert
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +125,16 @@ AIR_QUALITY_SERVICE_BINDINGS: List[QueueBinding] = [
         exchange=ALERT_EXCHANGE,
         routing_keys=["alert.violation.detected", "alert.violation.resolved"],
     ),
+    QueueBinding(
+        queue=AQ_SATELLITE_EVENTS_QUEUE,
+        exchange=SATELLITE_EXCHANGE,
+        routing_keys=["satellite.data.fetched"],
+    ),
+    QueueBinding(
+        queue=AQ_FUSION_EVENTS_QUEUE,
+        exchange=FUSION_EXCHANGE,
+        routing_keys=["fusion.completed"],
+    ),
 ]
 
 USER_SERVICE_BINDINGS: List[QueueBinding] = [
@@ -122,6 +145,30 @@ USER_SERVICE_BINDINGS: List[QueueBinding] = [
     ),
 ]
 
+ALERT_SERVICE_BINDINGS_EXTENDED: List[QueueBinding] = [
+    QueueBinding(
+        queue=ALERT_VALIDATION_QUEUE,
+        exchange=FUSION_EXCHANGE,
+        routing_keys=["validation.alert"],
+    ),
+]
+
+# Append extended alert bindings
+ALERT_SERVICE_BINDINGS = ALERT_SERVICE_BINDINGS + ALERT_SERVICE_BINDINGS_EXTENDED
+
+REMOTE_SENSING_SERVICE_BINDINGS: List[QueueBinding] = [
+    QueueBinding(
+        queue=RS_SENSOR_READINGS_QUEUE,
+        exchange=SENSOR_EXCHANGE,
+        routing_keys=["sensor.reading.created"],
+    ),
+    QueueBinding(
+        queue=RS_FACTORY_EVENTS_QUEUE,
+        exchange=FACTORY_EXCHANGE,
+        routing_keys=["factory.status.changed"],
+    ),
+]
+
 # Convenience map: service-name → bindings
 SERVICE_BINDINGS: Dict[str, List[QueueBinding]] = {
     "factory-service": FACTORY_SERVICE_BINDINGS,
@@ -129,4 +176,5 @@ SERVICE_BINDINGS: Dict[str, List[QueueBinding]] = {
     "alert-service": ALERT_SERVICE_BINDINGS,
     "air-quality-service": AIR_QUALITY_SERVICE_BINDINGS,
     "user-service": USER_SERVICE_BINDINGS,
+    "remote-sensing-service": REMOTE_SENSING_SERVICE_BINDINGS,
 }

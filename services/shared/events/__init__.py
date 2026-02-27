@@ -23,6 +23,19 @@ from .alert_events import (
     AlertConfigUpdated,
 )
 
+from .satellite_events import (
+    SatelliteDataFetched,
+    SatelliteFetchFailed,
+    ExcelDataImported,
+    ExcelImportFailed,
+)
+
+from .fusion_events import (
+    DataFusionCompleted,
+    CalibrationUpdated,
+    CrossValidationAlert,
+)
+
 __all__ = [
     "DomainEvent",
     # Factory
@@ -40,4 +53,13 @@ __all__ = [
     "ViolationDetected",
     "ViolationResolved",
     "AlertConfigUpdated",
+    # Satellite / Remote Sensing
+    "SatelliteDataFetched",
+    "SatelliteFetchFailed",
+    "ExcelDataImported",
+    "ExcelImportFailed",
+    # Fusion / Calibration
+    "DataFusionCompleted",
+    "CalibrationUpdated",
+    "CrossValidationAlert",
 ]
