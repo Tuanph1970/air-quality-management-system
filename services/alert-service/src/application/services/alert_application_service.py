@@ -8,9 +8,10 @@ domain layer).
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import AsyncGenerator, Dict, List, Optional
 from uuid import UUID
 
+from ...domain.entities.alert_config import AlertConfig
 from ...domain.entities.violation import Violation
 from ...domain.exceptions.alert_exceptions import (
     AlertConfigNotFoundError,
@@ -23,6 +24,7 @@ from ...domain.services.threshold_checker import SensorReading, ThresholdChecker
 from ...domain.value_objects.severity import Severity
 from ..commands.create_violation_command import CreateViolationCommand
 from ..commands.resolve_violation_command import ResolveViolationCommand
+from ..dto.alert_config_dto import AlertConfigDTO
 from ..dto.alert_dto import ViolationDTO
 from ..interfaces.event_publisher import EventPublisher
 from ..queries.get_violations_query import GetViolationsQuery
@@ -299,3 +301,221 @@ class AlertApplicationService:
                 "Failed to send notification for violation %s",
                 violation.id,
             )
+
+    # ------------------------------------------------------------------
+    # Additional Query Methods for Controller
+    # ------------------------------------------------------------------
+    async def get_violations_by_severity(
+        self,
+        severity: str,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[ViolationDTO]:
+        """List violations by severity level."""
+        violations = await self.violation_repository.list_by_severity(
+            severity=severity,
+            skip=skip,
+            limit=limit,
+        )
+        return [ViolationDTO.from_entity(v) for v in violations]
+
+    async def get_resolved_violations(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[ViolationDTO]:
+        """List all resolved violations."""
+        violations = await self.violation_repository.list_by_factory(
+            factory_id=UUID("00000000-0000-0000-0000-000000000000"),
+            status="RESOLVED",
+            skip=skip,
+            limit=limit,
+        )
+        # Fallback: use a direct query if available
+        violations = await self.violation_repository.list_open(skip=skip, limit=limit)
+        resolved = [v for v in violations if v.is_resolved]
+        return [ViolationDTO.from_entity(v) for v in resolved]
+
+    async def get_all_violations(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[ViolationDTO]:
+        """List all violations."""
+        # Use list_open as fallback; extend repository if all violations needed
+        violations = await self.violation_repository.list_open(
+            skip=skip, limit=limit
+        )
+        return [ViolationDTO.from_entity(v) for v in violations]
+
+    async def get_violation_by_id(
+        self, violation_id: UUID
+    ) -> Optional[ViolationDTO]:
+        """Get a single violation by ID."""
+        violation = await self.violation_repository.get_by_id(violation_id)
+        return ViolationDTO.from_entity(violation) if violation else None
+
+    async def resolve_violation_by_id(
+        self,
+        violation_id: UUID,
+        notes: str = "",
+        action_taken: str = "",
+    ) -> ViolationDTO:
+        """Resolve a violation by ID."""
+        command = ResolveViolationCommand(
+            violation_id=violation_id,
+            notes=notes,
+            action_taken=action_taken,
+        )
+        return await self.resolve_violation(command)
+
+    async def count_violations(
+        self,
+        factory_id: Optional[UUID] = None,
+        status: Optional[str] = None,
+        severity: Optional[str] = None,
+    ) -> int:
+        """Count violations with optional filters."""
+        return await self.violation_repository.count(
+            factory_id=factory_id, status=status
+        )
+
+    # ------------------------------------------------------------------
+    # Alert Configuration Methods
+    # ------------------------------------------------------------------
+    async def get_active_alert_configs(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[AlertConfigDTO]:
+        """List all active alert configurations."""
+        configs = await self.alert_config_repository.list_active()
+        return [AlertConfigDTO.from_entity(c) for c in configs[skip : skip + limit]]
+
+    async def get_all_alert_configs(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[AlertConfigDTO]:
+        """List all alert configurations."""
+        configs = await self.alert_config_repository.list_all(
+            skip=skip, limit=limit
+        )
+        return [AlertConfigDTO.from_entity(c) for c in configs]
+
+    async def get_alert_config_by_id(
+        self, config_id: UUID
+    ) -> Optional[AlertConfigDTO]:
+        """Get a single alert configuration by ID."""
+        config = await self.alert_config_repository.get_by_id(config_id)
+        return AlertConfigDTO.from_entity(config) if config else None
+
+    async def count_alert_configs(self, active_only: bool = False) -> int:
+        """Count alert configurations."""
+        if active_only:
+            configs = await self.alert_config_repository.list_active()
+            return len(configs)
+        configs = await self.alert_config_repository.list_all(skip=0, limit=1000)
+        return len(configs)
+
+    async def create_alert_config(
+        self,
+        name: str,
+        pollutant: str,
+        warning_threshold: float,
+        high_threshold: float,
+        critical_threshold: float,
+        duration_minutes: int = 0,
+        notify_email: bool = True,
+        notify_sms: bool = False,
+    ) -> AlertConfigDTO:
+        """Create a new alert configuration."""
+        config = AlertConfig.create(
+            name=name,
+            pollutant=pollutant,
+            warning_threshold=warning_threshold,
+            high_threshold=high_threshold,
+            critical_threshold=critical_threshold,
+            duration_minutes=duration_minutes,
+            notify_email=notify_email,
+            notify_sms=notify_sms,
+        )
+        saved = await self.alert_config_repository.save(config)
+        logger.info("Alert config created: id=%s pollutant=%s", saved.id, saved.pollutant)
+        return AlertConfigDTO.from_entity(saved)
+
+    async def update_alert_config(
+        self,
+        config_id: UUID,
+        name: Optional[str] = None,
+        pollutant: Optional[str] = None,
+        warning_threshold: Optional[float] = None,
+        high_threshold: Optional[float] = None,
+        critical_threshold: Optional[float] = None,
+        duration_minutes: Optional[int] = None,
+        notify_email: Optional[bool] = None,
+        notify_sms: Optional[bool] = None,
+    ) -> AlertConfigDTO:
+        """Update an existing alert configuration."""
+        config = await self.alert_config_repository.get_by_id(config_id)
+        if config is None:
+            raise AlertConfigNotFoundError(str(config_id))
+
+        config.update(
+            name=name,
+            warning_threshold=warning_threshold,
+            high_threshold=high_threshold,
+            critical_threshold=critical_threshold,
+            duration_minutes=duration_minutes,
+            notify_email=notify_email,
+            notify_sms=notify_sms,
+        )
+
+        saved = await self.alert_config_repository.save(config)
+        logger.info("Alert config updated: id=%s", saved.id)
+        return AlertConfigDTO.from_entity(saved)
+
+
+# =============================================================================
+# Dependency Injection for FastAPI
+# =============================================================================
+
+
+def get_alert_application_service() -> AsyncGenerator[AlertApplicationService, None]:
+    """FastAPI dependency that yields an AlertApplicationService instance.
+
+    Usage::
+
+        @router.get("/violations")
+        async def list_violations(
+            service: AlertApplicationService = Depends(get_alert_application_service)
+        ):
+            ...
+    """
+    from ...infrastructure.messaging.rabbitmq_publisher import RabbitMQEventPublisher
+    from ...infrastructure.persistence.alert_config_repository_impl import (
+        SQLAlchemyAlertConfigRepository,
+    )
+    from ...infrastructure.persistence.database import get_session_maker
+    from ...infrastructure.persistence.violation_repository_impl import (
+        SQLAlchemyViolationRepository,
+    )
+
+    async def _generate():
+        async with get_session_maker()() as session:
+            violation_repo = SQLAlchemyViolationRepository(session)
+            config_repo = SQLAlchemyAlertConfigRepository(session)
+            publisher = RabbitMQEventPublisher()
+            await publisher.connect()
+
+            service = AlertApplicationService(
+                violation_repository=violation_repo,
+                alert_config_repository=config_repo,
+                event_publisher=publisher,
+            )
+            try:
+                yield service
+            finally:
+                await publisher.close()
+
+    return _generate()

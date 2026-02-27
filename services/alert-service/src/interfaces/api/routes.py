@@ -20,6 +20,7 @@ from ...infrastructure.messaging.event_consumers import (
 )
 from ...infrastructure.messaging.rabbitmq_publisher import RabbitMQEventPublisher
 from ...infrastructure.persistence.database import Base, get_engine
+from .alert_controller import router as alert_router
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Include API routers
+app.include_router(alert_router)
 
 
 @app.get("/health")
