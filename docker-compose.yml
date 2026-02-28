@@ -148,7 +148,7 @@ services:
       - aqms-network
 
   remote-sensing-db:
-    image: postgres:15-alpine
+    image: timescale/timescaledb:latest-pg15
     container_name: aqms-remote-sensing-db
     ports:
       - "${REMOTE_SENSING_DB_PORT:-5436}:5432"

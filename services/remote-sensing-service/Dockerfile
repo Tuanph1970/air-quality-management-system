@@ -28,11 +28,10 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # ---------------------------------------------------------------------------
 FROM python:3.11-slim
 
-# Runtime dependencies for asyncpg, GDAL, NetCDF, HDF5.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       libpq5 libgdal32 libhdf5-103-1 libnetcdf19 \
-    && rm -rf /var/lib/apt/lists/*
+# Install runtime dependencies using our helper script
+# (Package names vary by Debian version)
+COPY scripts/install-runtime-deps.sh /tmp/install-runtime-deps.sh
+RUN chmod +x /tmp/install-runtime-deps.sh && /tmp/install-runtime-deps.sh
 
 # Non-root user for security.
 RUN groupadd --gid 1000 appuser \

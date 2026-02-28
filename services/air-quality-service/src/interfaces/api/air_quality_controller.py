@@ -16,7 +16,7 @@ import zlib
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from fastapi.responses import Response
 
 from ...application.services.air_quality_application_service import (
@@ -172,9 +172,9 @@ async def get_map_data_post(
 
 @router.get("/aqi/heatmap/tiles/{zoom}/{x}/{y}")
 async def get_heatmap_tile(
-    zoom: int = Query(..., ge=0, le=20, description="Zoom level"),
-    x: int = Query(..., ge=0, description="Tile X coordinate"),
-    y: int = Query(..., ge=0, description="Tile Y coordinate"),
+    zoom: int = Path(..., ge=0, le=20, description="Zoom level"),
+    x: int = Path(..., ge=0, description="Tile X coordinate"),
+    y: int = Path(..., ge=0, description="Tile Y coordinate"),
     service: AirQualityApplicationService = Depends(get_service),
 ) -> Response:
     """Get air quality heatmap tile.

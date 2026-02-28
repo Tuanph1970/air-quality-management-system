@@ -189,6 +189,100 @@ class AlertEventHandler:
         await message.ack()
 
     # ------------------------------------------------------------------
+    # validation.alert (Cross-validation alerts from air-quality-service)
+    # ------------------------------------------------------------------
+    @staticmethod
+    async def handle_cross_validation_alert(
+        event_data: Dict[str, Any],
+        message: Any,
+    ) -> None:
+        """Process a cross-validation alert from the air-quality service.
+
+        Flow:
+        1. Parse the validation alert event.
+        2. Create a sensor malfunction alert record.
+        3. Notify operators if deviation is significant.
+        4. Ack the message.
+        """
+        from ...domain.entities.violation import ViolationSeverity, ViolationStatus
+        from ...domain.value_objects.severity import Severity
+
+        sensor_id_raw = event_data.get("sensor_id")
+        sensor_value = event_data.get("sensor_value")
+        satellite_value = event_data.get("satellite_value")
+        deviation_percent = event_data.get("deviation_percent", 0)
+        pollutant = event_data.get("pollutant", "PM25")
+
+        if not sensor_id_raw:
+            logger.warning(
+                "CrossValidationAlert missing sensor_id — acking"
+            )
+            await message.ack()
+            return
+
+        try:
+            sensor_id = UUID(str(sensor_id_raw))
+        except (ValueError, TypeError) as exc:
+            logger.error(
+                "Invalid UUID in CrossValidationAlert: %s — rejecting", exc
+            )
+            await message.reject(requeue=False)
+            return
+
+        logger.info(
+            "Cross-validation alert: sensor=%s pollutant=%s deviation=%.1f%% (sensor=%.2f, satellite=%.2f)",
+            sensor_id,
+            pollutant,
+            deviation_percent,
+            sensor_value,
+            satellite_value,
+        )
+
+        # Create alert record for sensor malfunction
+        async with get_session_maker()() as session:
+            violation_repo = SQLAlchemyViolationRepository(session)
+            config_repo = SQLAlchemyAlertConfigRepository(session)
+
+            app_service = AlertApplicationService(
+                violation_repository=violation_repo,
+                alert_config_repository=config_repo,
+                event_publisher=_publisher,
+                threshold_checker=ThresholdChecker(),
+            )
+
+            try:
+                # Determine severity based on deviation
+                if deviation_percent > 50:
+                    severity = ViolationSeverity.CRITICAL
+                elif deviation_percent > 30:
+                    severity = ViolationSeverity.HIGH
+                else:
+                    severity = ViolationSeverity.WARNING
+
+                # Create a sensor malfunction violation
+                await app_service.create_sensor_malfunction_alert(
+                    sensor_id=sensor_id,
+                    pollutant=pollutant,
+                    sensor_value=sensor_value,
+                    reference_value=satellite_value,
+                    deviation_percent=deviation_percent,
+                    severity=severity,
+                )
+
+                logger.info(
+                    "Created sensor malfunction alert for sensor %s",
+                    sensor_id,
+                )
+            except Exception:
+                logger.exception(
+                    "Error creating sensor malfunction alert for sensor %s",
+                    sensor_id,
+                )
+                raise
+
+        await message.ack()
+
+    # ------------------------------------------------------------------
     # Handler registry
     # ------------------------------------------------------------------
     def get_handlers(self) -> Dict[str, EventHandler]:
@@ -200,9 +294,11 @@ class AlertEventHandler:
         from shared.messaging.config import (
             ALERT_FACTORY_EVENTS_QUEUE,
             ALERT_SENSOR_READINGS_QUEUE,
+            ALERT_VALIDATION_QUEUE,
         )
 
         return {
             ALERT_SENSOR_READINGS_QUEUE: self.handle_sensor_reading,
             ALERT_FACTORY_EVENTS_QUEUE: self.handle_factory_status_changed,
+            ALERT_VALIDATION_QUEUE: self.handle_cross_validation_alert,
         }

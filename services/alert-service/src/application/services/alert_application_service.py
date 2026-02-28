@@ -475,6 +475,77 @@ class AlertApplicationService:
         logger.info("Alert config updated: id=%s", saved.id)
         return AlertConfigDTO.from_entity(saved)
 
+    # ------------------------------------------------------------------
+    # Use Case: Create sensor malfunction alert (from cross-validation)
+    # ------------------------------------------------------------------
+    async def create_sensor_malfunction_alert(
+        self,
+        sensor_id: UUID,
+        pollutant: str,
+        sensor_value: float,
+        reference_value: float,
+        deviation_percent: float,
+        severity,
+    ) -> ViolationDTO:
+        """Create a sensor malfunction alert from cross-validation data.
+        
+        This is called when the air-quality-service detects a significant
+        deviation between sensor readings and satellite reference data.
+        
+        Parameters
+        ----------
+        sensor_id:
+            The sensor that produced the anomalous reading.
+        pollutant:
+            The pollutant being measured (e.g., "PM25", "NO2").
+        sensor_value:
+            The value reported by the sensor.
+        reference_value:
+            The satellite reference value.
+        deviation_percent:
+            The percentage deviation between sensor and reference.
+        severity:
+            The severity level (WARNING, HIGH, CRITICAL).
+            
+        Returns
+        -------
+        ViolationDTO
+            DTO for the created violation.
+        """
+        # Create a violation representing sensor malfunction
+        # Use a dummy factory_id (all zeros) since this is sensor-related
+        dummy_factory_id = UUID("00000000-0000-0000-0000-000000000000")
+        
+        violation = Violation.create(
+            factory_id=dummy_factory_id,
+            sensor_id=sensor_id,
+            pollutant=pollutant,
+            measured_value=sensor_value,
+            permitted_value=reference_value,
+            severity=severity,
+        )
+        
+        # Add notes about the deviation
+        violation.notes = (
+            f"Sensor malfunction detected via cross-validation. "
+            f"Deviation: {deviation_percent:.1f}% (sensor={sensor_value:.2f}, satellite={reference_value:.2f})"
+        )
+        
+        saved = await self.violation_repository.save(violation)
+        
+        # Publish domain events
+        for event in saved.collect_events():
+            await self.event_publisher.publish(event)
+        
+        logger.info(
+            "Sensor malfunction alert created: sensor=%s pollutant=%s deviation=%.1f%%",
+            sensor_id,
+            pollutant,
+            deviation_percent,
+        )
+        
+        return ViolationDTO.from_entity(saved)
+
 
 # =============================================================================
 # Dependency Injection for FastAPI

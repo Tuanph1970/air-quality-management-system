@@ -16,6 +16,8 @@ from ...domain.value_objects.geo_polygon import GeoPolygon
 from ...domain.value_objects.satellite_source import SatelliteSource
 from .dependencies import get_satellite_service, get_scheduler
 from .schemas import (
+    ExcelTemplateListResponse,
+    ExcelTemplateResponse,
     FetchSatelliteRequest,
     LocationDataRequest,
     LocationDataResponse,
@@ -24,6 +26,7 @@ from .schemas import (
     SatelliteDataListResponse,
     SatelliteDataResponse,
     ScheduleConfigResponse,
+    ScheduleUpdateRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -246,4 +249,168 @@ async def get_schedule():
         modis_cron=settings.MODIS_FETCH_CRON,
         tropomi_enabled=settings.TROPOMI_FETCH_ENABLED,
         tropomi_cron=settings.TROPOMI_FETCH_CRON,
+    )
+
+
+@router.put(
+    "/schedule",
+    response_model=ScheduleConfigResponse,
+    summary="Update fetch schedule configuration",
+)
+async def update_schedule(request: ScheduleUpdateRequest):
+    """Update the scheduler configuration.
+    
+    Updates environment variables and restarts scheduler jobs.
+    Note: Changes are in-memory only and will be lost on service restart.
+    To persist, update your .env file and restart the service.
+    """
+    from ...config import settings
+    
+    scheduler = get_scheduler()
+    
+    # Update settings (in-memory only)
+    if request.cams_enabled is not None:
+        settings.CAMS_FETCH_ENABLED = request.cams_enabled
+    if request.cams_cron is not None:
+        settings.CAMS_FETCH_CRON = request.cams_cron
+    if request.modis_enabled is not None:
+        settings.MODIS_FETCH_ENABLED = request.modis_enabled
+    if request.modis_cron is not None:
+        settings.MODIS_FETCH_CRON = request.modis_cron
+    if request.tropomi_enabled is not None:
+        settings.TROPOMI_FETCH_ENABLED = request.tropomi_enabled
+    if request.tropomi_cron is not None:
+        settings.TROPOMI_FETCH_CRON = request.tropomi_cron
+    
+    # Restart scheduler with new config
+    if scheduler:
+        scheduler.stop()
+        scheduler.start()
+    
+    return ScheduleConfigResponse(
+        cams_enabled=settings.CAMS_FETCH_ENABLED,
+        cams_cron=settings.CAMS_FETCH_CRON,
+        modis_enabled=settings.MODIS_FETCH_ENABLED,
+        modis_cron=settings.MODIS_FETCH_CRON,
+        tropomi_enabled=settings.TROPOMI_FETCH_ENABLED,
+        tropomi_cron=settings.TROPOMI_FETCH_CRON,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Excel Templates
+# ---------------------------------------------------------------------------
+@router.get(
+    "/templates",
+    response_model=ExcelTemplateListResponse,
+    summary="Get available Excel templates",
+)
+async def get_excel_templates():
+    """Return information about available Excel import templates.
+    
+    Templates can be downloaded and used as a guide for data import.
+    """
+    templates = [
+        {
+            "id": "historical_readings",
+            "name": "Historical Air Quality Readings",
+            "description": "Import historical sensor data with timestamps and pollutant measurements",
+            "columns": [
+                "timestamp", "location_id", "latitude", "longitude",
+                "pm25", "pm10", "co2", "no2", "temperature", "humidity"
+            ],
+            "download_url": "/api/v1/satellite/excel/templates/historical_readings/download"
+        },
+        {
+            "id": "factory_records",
+            "name": "Factory Emission Records",
+            "description": "Import factory emission data and permit information",
+            "columns": [
+                "factory_name", "registration_number", "latitude", "longitude",
+                "industry_type", "pm25_limit", "pm10_limit", "status"
+            ],
+            "download_url": "/api/v1/satellite/excel/templates/factory_records/download"
+        }
+    ]
+    return ExcelTemplateListResponse(templates=templates)
+
+
+@router.get(
+    "/templates/{template_id}/download",
+    summary="Download Excel template",
+)
+async def download_excel_template(template_id: str):
+    """Download an Excel template file.
+    
+    Returns an Excel file with the correct column structure for importing data.
+    """
+    from io import BytesIO
+    
+    try:
+        import pandas as pd
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Excel template generation requires pandas. Install with: pip install pandas openpyxl"
+        )
+    
+    templates = {
+        "historical_readings": {
+            "filename": "template_historical_readings.xlsx",
+            "columns": [
+                "timestamp", "location_id", "latitude", "longitude",
+                "pm25", "pm10", "co2", "no2", "temperature", "humidity"
+            ],
+            "example_data": [
+                ["2024-01-01 00:00:00", "sensor_001", 10.7769, 106.7009, 15.2, 28.5, 420, 18.3, 28.5, 65],
+                ["2024-01-01 01:00:00", "sensor_001", 10.7769, 106.7009, 14.8, 27.2, 415, 17.9, 28.2, 66],
+            ]
+        },
+        "factory_records": {
+            "filename": "template_factory_records.xlsx",
+            "columns": [
+                "factory_name", "registration_number", "latitude", "longitude",
+                "industry_type", "pm25_limit", "pm10_limit", "status"
+            ],
+            "example_data": [
+                ["Factory Alpha", "REG-001", 10.7829, 106.6959, "Manufacturing", 50.0, 100.0, "active"],
+                ["Factory Beta", "REG-002", 10.7689, 106.7109, "Chemical", 35.0, 75.0, "active"],
+            ]
+        }
+    }
+    
+    if template_id not in templates:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Template not found: {template_id}. Available: {list(templates.keys())}"
+        )
+    
+    template = templates[template_id]
+    
+    # Create DataFrame with example data
+    df = pd.DataFrame(template["example_data"], columns=template["columns"])
+    
+    # Write to BytesIO
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Template")
+        worksheet = writer.sheets["Template"]
+        
+        # Add instructions row at the top
+        worksheet.insert_rows(1)
+        worksheet.merge_cells(f"A1:{chr(64 + len(template['columns']))}1")
+        cell = worksheet["A1"]
+        cell.value = f"Template: {template['name']} - Fill in your data below. Keep column names unchanged."
+        cell.font = cell.font.copy(bold=True, color="FF0066CC")
+    
+    output.seek(0)
+    
+    from fastapi.responses import StreamingResponse
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename={template['filename']}"
+        }
     )

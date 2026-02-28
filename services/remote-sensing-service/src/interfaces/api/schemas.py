@@ -233,6 +233,33 @@ class ScheduleConfigResponse(BaseModel):
     tropomi_cron: str
 
 
+class ScheduleUpdateRequest(BaseModel):
+    """Request body to update scheduler configuration."""
+
+    cams_enabled: Optional[bool] = None
+    cams_cron: Optional[str] = None
+    modis_enabled: Optional[bool] = None
+    modis_cron: Optional[str] = None
+    tropomi_enabled: Optional[bool] = None
+    tropomi_cron: Optional[str] = None
+
+
+class ExcelTemplateResponse(BaseModel):
+    """Excel template information."""
+
+    id: str
+    name: str
+    description: str
+    columns: List[str]
+    download_url: str
+
+
+class ExcelTemplateListResponse(BaseModel):
+    """List of available Excel templates."""
+
+    templates: List[ExcelTemplateResponse]
+
+
 class ManualFetchRequest(BaseModel):
     """Request body to trigger a manual satellite fetch."""
 

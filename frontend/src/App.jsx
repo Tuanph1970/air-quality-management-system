@@ -12,6 +12,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import DataSourcesPage from './pages/DataSourcesPage';
 import useAuthStore from './store/authStore';
 
 function ProtectedRoute({ children }) {
@@ -51,6 +52,7 @@ function App() {
           <Route path="sensors" element={<SensorsPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="data-sources" element={<DataSourcesPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

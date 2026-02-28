@@ -7,7 +7,9 @@ WORKDIR /app
 
 # Copy dependency manifests first for better layer caching
 COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --no-fund
+
+# Use npm install instead of ci for better compatibility
+RUN npm install --no-audit --no-fund
 
 # Copy source and build
 COPY . .
