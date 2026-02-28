@@ -43,21 +43,21 @@ async def proxy_auth_request(request: Request, path: str = "") -> JSONResponse:
 
         url = f"/api/v1/auth/{path}" if path else "/api/v1/auth"
 
-        body = None
+        json_body = None
         if request.method in ("POST", "PUT", "PATCH"):
-            body = await request.body()
-            if body:
+            raw_body = await request.body()
+            if raw_body:
                 import json
                 try:
-                    body = json.loads(body)
-                except:
-                    pass
+                    json_body = json.loads(raw_body)
+                except Exception:
+                    json_body = None
 
         response = await client.request(
             method=request.method,
             path=url,
             params=dict(request.query_params),
-            json=body,
+            json=json_body,
         )
 
         return JSONResponse(

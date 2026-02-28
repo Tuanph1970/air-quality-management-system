@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
 
     # Database tables are created on startup (dev convenience)
     from ...infrastructure.persistence.database import Base, get_engine
+    from ...infrastructure.persistence import models as _models  # noqa: F401 – register all models
 
     engine = get_engine()
     async with engine.begin() as conn:

@@ -49,6 +49,7 @@ class UserApplicationService:
         user_repository: UserRepository,
         auth_service: AuthService,
         jwt_handler: Optional[Any] = None,
+        session: Optional[Any] = None,
     ):
         """Initialize the application service.
 
@@ -64,6 +65,7 @@ class UserApplicationService:
         self.user_repository = user_repository
         self.auth_service = auth_service
         self.jwt_handler = jwt_handler
+        self.session = session
 
     # ------------------------------------------------------------------
     # Use Case: Register new user
@@ -402,6 +404,150 @@ class UserApplicationService:
         return UserDTO.from_entity(saved)
 
     # ------------------------------------------------------------------
+    # Use Case: Forgot password (request reset token)
+    # ------------------------------------------------------------------
+    async def forgot_password(self, email: str) -> Dict[str, Any]:
+        """Generate a password reset token for the user.
+
+        Always returns success to avoid revealing whether an email exists.
+        In development, the token is returned in the response.
+        In production, it would be sent via email.
+
+        Parameters
+        ----------
+        email:
+            The user's email address
+
+        Returns
+        -------
+        dict
+            Message and optional reset_token (development only)
+        """
+        import secrets
+        from datetime import timezone as tz
+        from ...infrastructure.persistence.models import PasswordResetTokenModel
+        from sqlalchemy import select, delete
+
+        email_lower = email.lower().strip()
+        user = await self.user_repository.get_by_email(email_lower)
+
+        if not user or not user.is_active:
+            # Don't reveal if email exists
+            return {"message": "If that email is registered, a reset link has been sent.", "reset_token": None}
+
+        # Delete any existing unused tokens for this user
+        if self.session:
+            await self.session.execute(
+                delete(PasswordResetTokenModel).where(
+                    PasswordResetTokenModel.user_id == user.id,
+                    PasswordResetTokenModel.is_used == False,  # noqa: E712
+                )
+            )
+
+        # Generate a secure token
+        raw_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(tz.utc) + timedelta(minutes=30)
+
+        reset_token_model = PasswordResetTokenModel(
+            user_id=user.id,
+            token=raw_token,
+            expires_at=expires_at,
+            is_used=False,
+        )
+
+        if self.session:
+            self.session.add(reset_token_model)
+            await self.session.commit()
+        else:
+            logger.warning("No session available; reset token not persisted.")
+
+        logger.info("Password reset requested for user: %s", email_lower)
+
+        # Return token in response (development). In production, send via email.
+        return {
+            "message": "If that email is registered, a reset link has been sent.",
+            "reset_token": raw_token,
+        }
+
+    # ------------------------------------------------------------------
+    # Use Case: Reset password (consume reset token)
+    # ------------------------------------------------------------------
+    async def reset_password(self, token: str, new_password: str) -> Dict[str, Any]:
+        """Reset user password using a valid reset token.
+
+        Parameters
+        ----------
+        token:
+            Password reset token
+        new_password:
+            New password for the account
+
+        Returns
+        -------
+        dict
+            Success message
+
+        Raises
+        ------
+        ValueError
+            If token is invalid, expired, or already used
+        PasswordTooWeakError
+            If new password doesn't meet requirements
+        """
+        from datetime import timezone as tz
+        from uuid import UUID
+        from ...infrastructure.persistence.models import PasswordResetTokenModel
+        from ...domain.exceptions.user_exceptions import PasswordTooWeakError
+        from sqlalchemy import select
+
+        if not self.session:
+            raise ValueError("Service configuration error.")
+
+        # Find the token
+        result = await self.session.execute(
+            select(PasswordResetTokenModel).where(
+                PasswordResetTokenModel.token == token
+            )
+        )
+        reset_record = result.scalar_one_or_none()
+
+        if not reset_record:
+            raise ValueError("Invalid or expired reset token.")
+
+        if reset_record.is_used:
+            raise ValueError("This reset token has already been used.")
+
+        now = datetime.now(tz.utc)
+        expires_at = reset_record.expires_at
+        # Ensure timezone-aware comparison
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=tz.utc)
+
+        if now > expires_at:
+            raise ValueError("Reset token has expired. Please request a new one.")
+
+        # Validate new password strength
+        is_valid, error_msg = AuthService.validate_password_strength(new_password)
+        if not is_valid:
+            raise PasswordTooWeakError(error_msg)
+
+        # Get user and update password
+        user = await self.user_repository.get_by_id(reset_record.user_id)
+        if not user or not user.is_active:
+            raise ValueError("User account not found or inactive.")
+
+        new_hash = self.auth_service.hash_password(new_password)
+        user.change_password(new_hash)
+        await self.user_repository.save(user)
+
+        # Mark token as used
+        reset_record.is_used = True
+        await self.session.commit()
+
+        logger.info("Password reset successful for user: %s", user.id)
+        return {"message": "Password has been reset successfully. You can now log in."}
+
+    # ------------------------------------------------------------------
     # Helper methods
     # ------------------------------------------------------------------
     def _generate_access_token(self, user: User) -> str:
@@ -423,14 +569,12 @@ class UserApplicationService:
 
             return create_access_token(
                 user_id=str(user.id),
-                email=str(user.email),
                 role=user.role.value,
                 expires_delta=timedelta(minutes=settings.JWT_EXPIRATION_MINUTES),
             )
 
         return self.jwt_handler.create_access_token(
             user_id=str(user.id),
-            email=str(user.email),
             role=user.role.value,
         )
 
@@ -440,8 +584,8 @@ class UserApplicationService:
 # =============================================================================
 
 
-def get_user_application_service():
-    """FastAPI dependency that yields a UserApplicationService instance.
+async def get_user_application_service():
+    """FastAPI async generator dependency that yields a UserApplicationService instance.
 
     Usage::
 
@@ -455,18 +599,13 @@ def get_user_application_service():
     from ...infrastructure.persistence.database import get_session_maker
     from ...infrastructure.persistence.user_repository_impl import SQLAlchemyUserRepository
 
-    async def _generate():
-        async with get_session_maker()() as session:
-            user_repo = SQLAlchemyUserRepository(session)
-            auth_service = AuthService()
+    async with get_session_maker()() as session:
+        user_repo = SQLAlchemyUserRepository(session)
+        auth_service = AuthService()
 
-            service = UserApplicationService(
-                user_repository=user_repo,
-                auth_service=auth_service,
-            )
-            try:
-                yield service
-            finally:
-                pass
-
-    return _generate()
+        service = UserApplicationService(
+            user_repository=user_repo,
+            auth_service=auth_service,
+            session=session,
+        )
+        yield service

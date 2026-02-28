@@ -17,13 +17,16 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ...application.services.user_application_service import (
     UserApplicationService,
-    get_user_application_service,
+    get_user_application_service as _get_user_application_service,
 )
 from .schemas import (
     ChangePasswordRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     RefreshTokenRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UpdateProfileRequest,
     UserResponse,
@@ -42,9 +45,11 @@ security = HTTPBearer(auto_error=False)
 # =============================================================================
 
 
-def get_service() -> UserApplicationService:
+async def get_service(
+    service: UserApplicationService = Depends(_get_user_application_service),
+) -> UserApplicationService:
     """Inject the user application service."""
-    return next(get_user_application_service())
+    return service
 
 
 async def get_current_user_id(
@@ -187,6 +192,58 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+@router.post("/auth/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    service: UserApplicationService = Depends(get_service),
+) -> ForgotPasswordResponse:
+    """Request a password reset token.
+
+    Sends a password reset link to the provided email address.
+    Always returns success to avoid revealing whether an email is registered.
+
+    In development mode, the reset token is returned in the response.
+    In production, the token would be sent via email.
+
+    - **email**: Email address of the account to reset
+    """
+    try:
+        result = await service.forgot_password(request.email)
+        return ForgotPasswordResponse(
+            message=result["message"],
+            reset_token=result.get("reset_token"),
+        )
+    except Exception as e:
+        logger.error(f"Forgot password error: {e}")
+        return ForgotPasswordResponse(
+            message="If that email is registered, a reset link has been sent.",
+            reset_token=None,
+        )
+
+
+@router.post("/auth/reset-password")
+async def reset_password(
+    request: ResetPasswordRequest,
+    service: UserApplicationService = Depends(get_service),
+) -> dict:
+    """Reset password using a valid reset token.
+
+    Validates the token and updates the user's password.
+
+    - **token**: Reset token received from the forgot-password endpoint
+    - **new_password**: New password (min 8 chars, must include uppercase, lowercase, digit, special char)
+    """
+    try:
+        result = await service.reset_password(request.token, request.new_password)
+        return result
+    except Exception as e:
+        logger.warning(f"Reset password error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )
 
 
