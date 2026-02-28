@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     ALERT_SERVICE_URL: str = "http://alert-service:8003"
     AIR_QUALITY_SERVICE_URL: str = "http://air-quality-service:8004"
     USER_SERVICE_URL: str = "http://user-service:8005"
+    REMOTE_SENSING_SERVICE_URL: str = "http://remote-sensing-service:8006"
 
     # =========================================================================
     # JWT / Authentication

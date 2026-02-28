@@ -147,6 +147,32 @@ services:
     networks:
       - aqms-network
 
+  remote-sensing-db:
+    image: postgres:15-alpine
+    container_name: aqms-remote-sensing-db
+    ports:
+      - "${REMOTE_SENSING_DB_PORT:-5436}:5432"
+    environment:
+      POSTGRES_DB: remote_sensing_db
+      POSTGRES_USER: ${DB_USER:-aqms_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+    volumes:
+      - remote_sensing_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d remote_sensing_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
   redis:
     image: redis:7-alpine
     container_name: aqms-redis
@@ -190,6 +216,7 @@ services:
       - ALERT_SERVICE_URL=http://alert-service:8003
       - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
       - USER_SERVICE_URL=http://user-service:8005
+      - REMOTE_SENSING_SERVICE_URL=http://remote-sensing-service:8006
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/api-gateway/src:/app/src
@@ -407,6 +434,56 @@ services:
       - aqms-network
 
   # ===========================================================================
+  # REMOTE SENSING SERVICE - Satellite data, Excel import, data fusion
+  # ===========================================================================
+  remote-sensing-service:
+    build:
+      context: ./services/remote-sensing-service
+      dockerfile: Dockerfile
+    container_name: aqms-remote-sensing-service
+    ports:
+      - "${REMOTE_SENSING_SERVICE_PORT:-8006}:8006"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=remote-sensing-service
+      - SERVICE_PORT=8006
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@remote-sensing-db:5432/remote_sensing_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - COPERNICUS_ADS_API_KEY=${COPERNICUS_ADS_API_KEY:-}
+      - NASA_EARTHDATA_TOKEN=${NASA_EARTHDATA_TOKEN:-}
+      - SENTINEL_HUB_CLIENT_ID=${SENTINEL_HUB_CLIENT_ID:-}
+      - SENTINEL_HUB_CLIENT_SECRET=${SENTINEL_HUB_CLIENT_SECRET:-}
+      - CITY_BBOX_NORTH=${CITY_BBOX_NORTH:-21.1}
+      - CITY_BBOX_SOUTH=${CITY_BBOX_SOUTH:-20.9}
+      - CITY_BBOX_EAST=${CITY_BBOX_EAST:-105.9}
+      - CITY_BBOX_WEST=${CITY_BBOX_WEST:-105.7}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/remote-sensing-service/src:/app/src
+      - ./services/shared:/app/shared
+      - satellite_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8006/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      remote-sensing-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # FRONTEND - Vite dev server with hot-reload (development)
   # ===========================================================================
   frontend-dev:
@@ -483,6 +560,10 @@ volumes:
   alert_db_data:
     driver: local
   user_db_data:
+    driver: local
+  remote_sensing_db_data:
+    driver: local
+  satellite_data:
     driver: local
   redis_data:
     driver: local

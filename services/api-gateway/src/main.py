@@ -27,6 +27,7 @@ from .routes import (
     auth_router,
     dashboard_router,
     factory_router,
+    satellite_router,
     sensor_router,
 )
 from .utils.service_client import registry
@@ -110,6 +111,7 @@ def create_app() -> FastAPI:
             "alert-service": settings.ALERT_SERVICE_URL,
             "air-quality-service": settings.AIR_QUALITY_SERVICE_URL,
             "user-service": settings.USER_SERVICE_URL,
+            "remote-sensing-service": settings.REMOTE_SENSING_SERVICE_URL,
         }
 
         for name, url in services.items():
@@ -134,6 +136,7 @@ def create_app() -> FastAPI:
                 "alerts": "/api/v1/alerts",
                 "violations": "/api/v1/violations",
                 "air-quality": "/api/v1/air-quality",
+                "satellite": "/api/v1/satellite",
                 "dashboard": "/api/v1/dashboard",
             },
         }
@@ -144,6 +147,7 @@ def create_app() -> FastAPI:
     app.include_router(sensor_router)
     app.include_router(alert_router)
     app.include_router(air_quality_router)
+    app.include_router(satellite_router)
     app.include_router(dashboard_router)  # Requires auth
 
     logger.info("All routes registered")
@@ -163,6 +167,7 @@ def create_app() -> FastAPI:
         registry.register("alert-service", settings.ALERT_SERVICE_URL)
         registry.register("air-quality-service", settings.AIR_QUALITY_SERVICE_URL)
         registry.register("user-service", settings.USER_SERVICE_URL)
+        registry.register("remote-sensing-service", settings.REMOTE_SENSING_SERVICE_URL)
 
         # Connect all clients
         await registry.connect_all()

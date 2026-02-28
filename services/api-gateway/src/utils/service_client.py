@@ -148,7 +148,6 @@ class ServiceClient:
             base_url=self.base_url,
             timeout=httpx.Timeout(self.timeout),
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
             },
         )
@@ -265,6 +264,40 @@ class ServiceClient:
     async def delete(self, path: str, **kwargs) -> httpx.Response:
         """Make DELETE request."""
         return await self.request("DELETE", path, **kwargs)
+
+    async def post_file(
+        self,
+        path: str,
+        file_content: bytes,
+        filename: str,
+        content_type: str = "application/octet-stream",
+        field_name: str = "file",
+        **kwargs,
+    ) -> httpx.Response:
+        """Make POST request with multipart file upload.
+
+        Parameters
+        ----------
+        path:
+            Request path
+        file_content:
+            Raw file bytes
+        filename:
+            Original filename
+        content_type:
+            MIME type of the file
+        field_name:
+            Form field name for the file
+        **kwargs:
+            Additional httpx arguments
+
+        Returns
+        -------
+        httpx.Response
+            HTTP response
+        """
+        files = {field_name: (filename, file_content, content_type)}
+        return await self.request("POST", path, files=files, **kwargs)
 
     def get_circuit_state(self) -> Optional[CircuitState]:
         """Get circuit breaker state.
