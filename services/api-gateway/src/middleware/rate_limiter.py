@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 import redis.asyncio as redis
+from fastapi import Depends, Request
 
 from ..config import settings
 
@@ -375,6 +376,3 @@ async def check_rate_limit(
     """
     key = f"endpoint:{request.url.path}"
     return await limiter.check_rate_limit(key, settings.RATE_LIMIT_DEFAULT)
-
-
-from fastapi import Depends, Request

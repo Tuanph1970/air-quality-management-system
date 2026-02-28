@@ -6,3 +6,4 @@ python-dotenv==1.0.0
 pydantic==2.5.2
 pydantic-settings==2.1.0
 redis[hiredis]==5.0.1
+python-multipart==0.0.6

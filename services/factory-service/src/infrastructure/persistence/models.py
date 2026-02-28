@@ -19,7 +19,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy import JSON, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -36,7 +36,7 @@ class FactoryModel(Base):
 
     # --- identity ---
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
 
     # --- core fields ---
@@ -97,12 +97,12 @@ class SuspensionModel(Base):
 
     # --- identity ---
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
 
     # --- foreign key ---
     factory_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("factories.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -110,7 +110,7 @@ class SuspensionModel(Base):
     # --- core fields ---
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     suspended_by: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False,
+        Uuid(as_uuid=True), nullable=False,
     )
     suspended_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow,
@@ -121,7 +121,7 @@ class SuspensionModel(Base):
         DateTime(timezone=True), nullable=True,
     )
     resumed_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True,
+        Uuid(as_uuid=True), nullable=True,
     )
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
 

@@ -22,7 +22,7 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy import JSON, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .timescale_database import Base
@@ -39,7 +39,7 @@ class SensorModel(Base):
 
     # --- identity ---
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
 
     # --- core fields ---
@@ -51,7 +51,7 @@ class SensorModel(Base):
 
     # --- association ---
     factory_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True,
+        Uuid(as_uuid=True), nullable=True,
     )
 
     # --- location ---
@@ -110,15 +110,15 @@ class ReadingModel(Base):
 
     # --- identity ---
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
 
     # --- associations ---
     sensor_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), nullable=False,
+        Uuid(as_uuid=True), nullable=False,
     )
     factory_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True,
+        Uuid(as_uuid=True), nullable=True,
     )
 
     # --- pollutant concentrations ---

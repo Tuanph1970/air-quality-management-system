@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Callable, Optional
 
-from fastapi import HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 

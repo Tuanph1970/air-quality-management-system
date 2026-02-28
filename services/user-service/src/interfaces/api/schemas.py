@@ -42,15 +42,6 @@ class LoginRequest(BaseModel):
     }}}
 
 
-class TokenResponse(BaseModel):
-    """Response schema for JWT token."""
-
-    access_token: str = Field(..., description="JWT access token")
-    token_type: str = Field(default="bearer", description="Token type")
-    expires_in: int = Field(default=3600, description="Token expiration in seconds")
-    user: Optional["UserResponse"] = Field(None, description="User information")
-
-
 class RefreshTokenRequest(BaseModel):
     """Request schema for token refresh."""
 
@@ -75,6 +66,15 @@ class UserResponse(BaseModel):
     last_login_at: Optional[datetime] = Field(None, description="Last login timestamp")
 
     model_config = {"from_attributes": True}
+
+
+class TokenResponse(BaseModel):
+    """Response schema for JWT token."""
+
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(default=3600, description="Token expiration in seconds")
+    user: Optional[UserResponse] = Field(None, description="User information")
 
 
 class UpdateProfileRequest(BaseModel):

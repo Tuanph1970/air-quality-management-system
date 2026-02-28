@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # Database
     # ------------------------------------------------------------------
     DATABASE_URL: str = (
-        "postgresql+asyncpg://aqms_user:aqms_pass@localhost:5436/remote_sensing_db"
+        "mysql+aiomysql://root:Mysql_2026@localhost:3306/remote_sensing_db?charset=utf8mb4"
     )
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10

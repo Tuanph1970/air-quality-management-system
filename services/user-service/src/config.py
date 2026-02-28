@@ -27,10 +27,10 @@ class Settings(BaseSettings):
     SERVICE_PORT: int = 8005
 
     # ------------------------------------------------------------------
-    # Database (PostgreSQL)
+    # Database (MySQL)
     # ------------------------------------------------------------------
     DATABASE_URL: str = (
-        "postgresql+asyncpg://aqms_user:aqms_pass@localhost:5435/user_db"
+        "mysql+aiomysql://root:Mysql_2026@localhost:3306/user_db?charset=utf8mb4"
     )
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10

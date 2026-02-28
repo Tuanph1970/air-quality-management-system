@@ -41,129 +41,26 @@ services:
       - aqms-network
 
   # ===========================================================================
-  # INFRASTRUCTURE - Databases
+  # INFRASTRUCTURE - Database (single MySQL instance, all services share it)
   # ===========================================================================
-  factory-db:
-    image: postgres:15-alpine
-    container_name: aqms-factory-db
+  mysql:
+    image: mysql:8.0
+    container_name: aqms-mysql
     ports:
-      - "${FACTORY_DB_PORT:-5432}:5432"
+      - "${MYSQL_PORT:-3307}:3306"
     environment:
-      POSTGRES_DB: factory_db
-      POSTGRES_USER: ${DB_USER:-aqms_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Mysql_2026}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     volumes:
-      - factory_db_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d factory_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - aqms-network
-
-  sensor-db:
-    image: timescale/timescaledb:latest-pg15
-    container_name: aqms-sensor-db
-    ports:
-      - "${SENSOR_DB_PORT:-5433}:5432"
-    environment:
-      POSTGRES_DB: sensor_db
-      POSTGRES_USER: ${DB_USER:-aqms_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
-    volumes:
-      - sensor_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d sensor_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - aqms-network
-
-  alert-db:
-    image: postgres:15-alpine
-    container_name: aqms-alert-db
-    ports:
-      - "${ALERT_DB_PORT:-5434}:5432"
-    environment:
-      POSTGRES_DB: alert_db
-      POSTGRES_USER: ${DB_USER:-aqms_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
-    volumes:
-      - alert_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d alert_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - aqms-network
-
-  user-db:
-    image: postgres:15-alpine
-    container_name: aqms-user-db
-    ports:
-      - "${USER_DB_PORT:-5435}:5432"
-    environment:
-      POSTGRES_DB: user_db
-      POSTGRES_USER: ${DB_USER:-aqms_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
-    volumes:
-      - user_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d user_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    networks:
-      - aqms-network
-
-  remote-sensing-db:
-    image: timescale/timescaledb:latest-pg15
-    container_name: aqms-remote-sensing-db
-    ports:
-      - "${REMOTE_SENSING_DB_PORT:-5436}:5432"
-    environment:
-      POSTGRES_DB: remote_sensing_db
-      POSTGRES_USER: ${DB_USER:-aqms_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aqms_pass}
-    volumes:
-      - remote_sensing_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-aqms_user} -d remote_sensing_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Mysql_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
     logging:
       driver: json-file
@@ -237,6 +134,10 @@ services:
         condition: service_healthy
       user-service:
         condition: service_healthy
+      remote-sensing-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: json-file
@@ -257,7 +158,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=factory-service
       - SERVICE_PORT=8001
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@factory-db:5432/factory_db
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/factory_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
@@ -270,7 +171,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      factory-db:
+      mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -294,7 +195,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=sensor-service
       - SERVICE_PORT=8002
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@sensor-db:5432/sensor_db
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/sensor_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
@@ -307,7 +208,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      sensor-db:
+      mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -331,7 +232,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=alert-service
       - SERVICE_PORT=8003
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@alert-db:5432/alert_db
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/alert_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
@@ -344,7 +245,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      alert-db:
+      mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -406,7 +307,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=user-service
       - SERVICE_PORT=8005
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@user-db:5432/user_db
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/user_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
@@ -420,7 +321,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      user-db:
+      mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -447,7 +348,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=remote-sensing-service
       - SERVICE_PORT=8006
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-aqms_user}:${DB_PASSWORD:-aqms_pass}@remote-sensing-db:5432/remote_sensing_db
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/remote_sensing_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - SENSOR_SERVICE_URL=http://sensor-service:8002
       - COPERNICUS_ADS_API_KEY=${COPERNICUS_ADS_API_KEY:-}
@@ -470,7 +371,7 @@ services:
       retries: 3
       start_period: 15s
     depends_on:
-      remote-sensing-db:
+      mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -532,7 +433,7 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
       interval: 15s
       timeout: 3s
       retries: 3
@@ -553,15 +454,7 @@ services:
 # VOLUMES - Named volumes for data persistence
 # =============================================================================
 volumes:
-  factory_db_data:
-    driver: local
-  sensor_db_data:
-    driver: local
-  alert_db_data:
-    driver: local
-  user_db_data:
-    driver: local
-  remote_sensing_db_data:
+  mysql_data:
     driver: local
   satellite_data:
     driver: local

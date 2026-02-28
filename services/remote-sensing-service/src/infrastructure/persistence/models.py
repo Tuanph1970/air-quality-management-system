@@ -17,7 +17,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
+from sqlalchemy import JSON, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -36,7 +36,7 @@ class SatelliteDataModel(Base):
     __tablename__ = "satellite_data"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
     source: Mapped[str] = mapped_column(String(50), nullable=False)
     data_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -84,7 +84,7 @@ class FusedDataModel(Base):
     __tablename__ = "fused_data"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
     sources_used: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     bbox: Mapped[dict] = mapped_column(JSON, nullable=False)
@@ -130,7 +130,7 @@ class ExcelImportModel(Base):
     __tablename__ = "excel_imports"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4,
     )
     filename: Mapped[str] = mapped_column(String(500), nullable=False)
     data_type: Mapped[str] = mapped_column(String(50), nullable=False)
