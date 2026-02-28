@@ -4,6 +4,9 @@ Orchestrates AQI-related use cases:
 - Get current AQI for a location
 - Get map data for visualization
 - Get AQI forecast
+- Data fusion (sensor + satellite)
+- Cross-validation of sensors
+- Calibration model management
 
 **Application layer**: Coordinates between domain services, repositories,
 and infrastructure. Contains no business rules.
@@ -11,18 +14,21 @@ and infrastructure. Contains no business rules.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, AsyncGenerator
+from uuid import UUID
 
 from ...config import settings
 from ...domain.services.aqi_calculator import AQICalculator, AQIResult
+from ...domain.services.calibration_model import CalibrationModel
+from ...domain.services.cross_validator import CrossValidationService
+from ...domain.services.data_fusion import DataFusionService
 from ...domain.services.prediction_service import PredictionService, SensorDataPoint
 from ...domain.value_objects.aqi_category import get_category_for_aqi
 from ..queries.get_current_aqi_query import GetCurrentAQIQuery, GetCurrentAQIResult
 from ..queries.get_forecast_query import GetForecastQuery, GetForecastResult, ForecastDataPoint
 from ..queries.get_map_data_query import GetMapDataQuery, GetMapDataResult, MapGridCell
-from ..infrastructure.cache.redis_cache import RedisCache
-from ..infrastructure.external.google_maps_client import GoogleMapsClient
 
 logger = logging.getLogger(__name__)
 
@@ -33,18 +39,23 @@ class AirQualityApplicationService:
     Coordinates between:
     - AQI Calculator (domain service)
     - Prediction Service (domain service)
+    - Calibration Model (domain service)
+    - Cross Validation Service (domain service)
+    - Data Fusion Service (domain service)
     - Redis Cache (infrastructure)
     - Google Maps API (infrastructure)
-    - Sensor repositories (infrastructure)
+    - Sensor Service client (infrastructure)
     """
 
     def __init__(
         self,
         aqi_calculator: AQICalculator,
         prediction_service: PredictionService,
-        cache: RedisCache,
-        google_client: GoogleMapsClient,
+        cache: Any,
+        google_client: Any,
         sensor_client: Optional[Any] = None,
+        calibration_model: Optional[CalibrationModel] = None,
+        cross_validator: Optional[CrossValidationService] = None,
     ):
         """Initialize the application service.
 
@@ -60,12 +71,18 @@ class AirQualityApplicationService:
             Google Maps API client
         sensor_client:
             Sensor Service client (optional)
+        calibration_model:
+            ML calibration model (optional)
+        cross_validator:
+            Cross-validation service (optional)
         """
         self.aqi_calculator = aqi_calculator
         self.prediction_service = prediction_service
         self.cache = cache
         self.google_client = google_client
         self.sensor_client = sensor_client
+        self.calibration_model = calibration_model or CalibrationModel()
+        self.cross_validator = cross_validator or CrossValidationService()
 
     async def get_current_aqi(
         self,
@@ -294,8 +311,540 @@ class AirQualityApplicationService:
         return result
 
     # =====================================================================
+    # Data Fusion Use Cases
+    # =====================================================================
+
+    async def get_fused_data(
+        self,
+        bbox: Dict[str, float],
+        timestamp: Optional[datetime] = None,
+    ) -> List[Dict]:
+        """Get fused air quality data for a bounding box.
+
+        Fetches nearby sensor readings and cached satellite data, then
+        runs data fusion with calibration.
+
+        Parameters
+        ----------
+        bbox:
+            Bounding box with keys: north, south, east, west
+        timestamp:
+            Observation timestamp (defaults to now)
+
+        Returns
+        -------
+        list[dict]
+            Fused data points with calibrated values and confidence.
+        """
+        ts = timestamp or datetime.utcnow()
+        center_lat = (bbox["north"] + bbox["south"]) / 2
+        center_lon = (bbox["east"] + bbox["west"]) / 2
+
+        # Fetch sensor readings
+        sensor_readings = await self._fetch_sensor_readings(
+            center_lat, center_lon, radius_km=50.0
+        )
+
+        # Fetch cached satellite data
+        satellite_data = await self._fetch_satellite_cache(center_lat, center_lon)
+
+        # Run fusion
+        fusion_service = DataFusionService(self.calibration_model)
+        fused_points = fusion_service.fuse_data(
+            sensor_readings=sensor_readings,
+            satellite_data=satellite_data,
+            timestamp=ts,
+        )
+
+        # Filter to bounding box
+        results = []
+        for point in fused_points:
+            if (
+                bbox["south"] <= point.location.latitude <= bbox["north"]
+                and bbox["west"] <= point.location.longitude <= bbox["east"]
+            ):
+                results.append({
+                    "latitude": point.location.latitude,
+                    "longitude": point.location.longitude,
+                    "timestamp": ts.isoformat(),
+                    "sensor_pm25": point.sensor_pm25,
+                    "sensor_pm10": point.sensor_pm10,
+                    "satellite_aod": point.satellite_aod,
+                    "fused_pm25": point.fused_pm25,
+                    "fused_pm10": point.fused_pm10,
+                    "fused_aqi": point.fused_aqi,
+                    "confidence": point.confidence,
+                    "data_sources": point.data_sources,
+                })
+
+        return results
+
+    async def trigger_fusion(self) -> int:
+        """Manually trigger data fusion for the current time.
+
+        Returns
+        -------
+        int
+            Number of data points fused.
+        """
+        ts = datetime.utcnow()
+
+        # Get all active sensors
+        sensor_readings = await self._fetch_sensor_readings(
+            latitude=0, longitude=0, radius_km=1000.0
+        )
+
+        if not sensor_readings:
+            return 0
+
+        # Get satellite data from cache
+        satellite_data = await self._fetch_satellite_cache(0, 0)
+
+        # Run fusion
+        fusion_service = DataFusionService(self.calibration_model)
+        fused_points = fusion_service.fuse_data(
+            sensor_readings=sensor_readings,
+            satellite_data=satellite_data,
+            timestamp=ts,
+        )
+
+        # Cache fused results
+        for point in fused_points:
+            if point.fused_aqi is not None and self.cache:
+                aqi_data = {
+                    "location_lat": point.location.latitude,
+                    "location_lng": point.location.longitude,
+                    "aqi_value": point.fused_aqi,
+                    "fused_pm25": point.fused_pm25,
+                    "fused_pm10": point.fused_pm10,
+                    "confidence": point.confidence,
+                    "data_sources": point.data_sources,
+                    "timestamp": ts.isoformat(),
+                }
+                await self.cache.set_aqi(
+                    point.location.latitude,
+                    point.location.longitude,
+                    10.0,
+                    aqi_data,
+                )
+
+        return len(fused_points)
+
+    async def get_fused_map_data(self, bbox: Dict[str, float]) -> Dict:
+        """Get fused data formatted for map visualization.
+
+        Parameters
+        ----------
+        bbox:
+            Bounding box with keys: north, south, east, west
+
+        Returns
+        -------
+        dict
+            Map visualization data with grid cells.
+        """
+        fused_data = await self.get_fused_data(bbox)
+
+        grid_cells = []
+        for point in fused_data:
+            if point.get("fused_aqi") is not None:
+                category = get_category_for_aqi(point["fused_aqi"])
+                grid_cells.append({
+                    "lat": point["latitude"],
+                    "lng": point["longitude"],
+                    "aqi_value": point["fused_aqi"],
+                    "level": category.level.value,
+                    "color": category.color_hex,
+                    "confidence": point["confidence"],
+                    "data_sources": point["data_sources"],
+                    "fused_pm25": point.get("fused_pm25"),
+                })
+
+        return {
+            "grid_cells": grid_cells,
+            "total": len(grid_cells),
+            "bbox": bbox,
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+    # =====================================================================
+    # Cross-Validation Use Cases
+    # =====================================================================
+
+    async def get_validation_report(self) -> Dict:
+        """Get cross-validation report for all sensors.
+
+        Returns
+        -------
+        dict
+            Validation report with per-sensor results and summary.
+        """
+        # Get active sensors
+        sensors = await self._get_active_sensors()
+
+        sensor_results = []
+        for sensor in sensors:
+            sensor_id = sensor.get("sensor_id", sensor.get("id", ""))
+            result = await self.get_sensor_validation(UUID(sensor_id) if sensor_id else None)
+            if result:
+                sensor_results.append(result)
+
+        valid = [s for s in sensor_results if s.get("is_valid", False)]
+        correlations = [s["correlation"] for s in sensor_results if "correlation" in s]
+        biases = [s["bias"] for s in sensor_results if "bias" in s]
+
+        return {
+            "total_sensors": len(sensor_results),
+            "valid_sensors": len(valid),
+            "invalid_sensors": len(sensor_results) - len(valid),
+            "average_correlation": (
+                sum(correlations) / len(correlations) if correlations else 0.0
+            ),
+            "average_bias": (
+                sum(biases) / len(biases) if biases else 0.0
+            ),
+            "sensors": sensor_results,
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+    async def get_sensor_validation(
+        self, sensor_id: Optional[UUID]
+    ) -> Optional[Dict]:
+        """Get validation status for a specific sensor.
+
+        Parameters
+        ----------
+        sensor_id:
+            Sensor UUID
+
+        Returns
+        -------
+        dict or None
+            Validation metrics or None if sensor not found.
+        """
+        if not sensor_id:
+            return None
+
+        # Get sensor readings
+        sensor_values = []
+        satellite_values = []
+
+        if self.sensor_client:
+            try:
+                end = datetime.utcnow()
+                start = end - timedelta(days=7)
+                readings = await self.sensor_client.get_sensor_readings(
+                    str(sensor_id), start, end, limit=100
+                )
+
+                for reading in readings:
+                    if reading.pm25 > 0:
+                        sensor_values.append(reading.pm25)
+                        # Look up satellite value from cache
+                        cached = await self.cache.get_aqi(
+                            reading.latitude, reading.longitude, 10.0
+                        )
+                        if cached and cached.get("fused_pm25") is not None:
+                            satellite_values.append(cached["fused_pm25"])
+                        else:
+                            # Remove the sensor value too to keep arrays aligned
+                            sensor_values.pop()
+            except Exception as e:
+                logger.warning("Error fetching sensor data for validation: %s", e)
+
+        if len(sensor_values) < 3:
+            return {
+                "sensor_id": str(sensor_id),
+                "sample_count": len(sensor_values),
+                "correlation": 0.0,
+                "bias": 0.0,
+                "rmse": 0.0,
+                "mae": 0.0,
+                "is_valid": False,
+                "status": "insufficient_data",
+            }
+
+        result = self.cross_validator.validate_sensor(
+            sensor_id=sensor_id,
+            sensor_values=sensor_values,
+            satellite_values=satellite_values,
+        )
+
+        return {
+            "sensor_id": str(result.sensor_id),
+            "sample_count": result.sample_count,
+            "correlation": round(result.correlation, 4),
+            "bias": round(result.bias, 2),
+            "rmse": round(result.rmse, 2),
+            "mae": round(result.mae, 2),
+            "is_valid": result.is_valid,
+            "status": result.status,
+        }
+
+    async def run_validation(self) -> int:
+        """Trigger cross-validation for all active sensors.
+
+        Returns
+        -------
+        int
+            Number of sensors validated.
+        """
+        sensors = await self._get_active_sensors()
+        count = 0
+
+        for sensor in sensors:
+            sensor_id = sensor.get("sensor_id", sensor.get("id", ""))
+            if sensor_id:
+                try:
+                    await self.get_sensor_validation(UUID(sensor_id))
+                    count += 1
+                except Exception as e:
+                    logger.warning("Validation failed for sensor %s: %s", sensor_id, e)
+
+        return count
+
+    # =====================================================================
+    # Calibration Use Cases
+    # =====================================================================
+
+    async def get_calibration_status(self) -> Dict:
+        """Get calibration model status.
+
+        Returns
+        -------
+        dict
+            Model status including training state and feature names.
+        """
+        model_exists = os.path.exists(self.calibration_model.model_path)
+        last_trained = None
+
+        if model_exists:
+            try:
+                mtime = os.path.getmtime(self.calibration_model.model_path)
+                last_trained = datetime.fromtimestamp(mtime).isoformat()
+            except OSError:
+                pass
+
+        return {
+            "is_trained": self.calibration_model.is_trained,
+            "model_path": self.calibration_model.model_path,
+            "feature_names": CalibrationModel.FEATURE_NAMES,
+            "last_trained": last_trained,
+        }
+
+    async def get_calibration_metrics(self) -> Dict:
+        """Get calibration model performance metrics.
+
+        Evaluates the model on recent matched sensor-satellite data.
+
+        Returns
+        -------
+        dict
+            R-squared, RMSE, MAE, bias, and feature importance.
+        """
+        if not self.calibration_model.is_trained:
+            return {
+                "r_squared": 0.0,
+                "rmse": 0.0,
+                "mae": 0.0,
+                "bias": 0.0,
+                "feature_importance": {},
+            }
+
+        # Get evaluation data
+        test_data = await self._get_training_pairs(days=7)
+        if len(test_data) < 3:
+            return {
+                "r_squared": 0.0,
+                "rmse": 0.0,
+                "mae": 0.0,
+                "bias": 0.0,
+                "feature_importance": {},
+            }
+
+        metrics = self.calibration_model.evaluate(test_data)
+
+        # Get feature importance from the model
+        importance = {}
+        if hasattr(self.calibration_model.model, "feature_importances_"):
+            importance = dict(
+                zip(
+                    CalibrationModel.FEATURE_NAMES,
+                    [float(v) for v in self.calibration_model.model.feature_importances_],
+                )
+            )
+
+        return {
+            "r_squared": round(metrics.r_squared, 4),
+            "rmse": round(metrics.rmse, 2),
+            "mae": round(metrics.mae, 2),
+            "bias": round(metrics.bias, 2),
+            "feature_importance": importance,
+        }
+
+    async def retrain_calibration(
+        self, days: int = 30, min_samples: int = 50
+    ) -> Dict:
+        """Retrain calibration model with recent matched data.
+
+        Parameters
+        ----------
+        days:
+            Number of days of training data to use.
+        min_samples:
+            Minimum samples required for training.
+
+        Returns
+        -------
+        dict
+            Training result with model version and metrics.
+
+        Raises
+        ------
+        HTTPException
+            If insufficient training data is available.
+        """
+        from fastapi import HTTPException
+
+        training_data = await self._get_training_pairs(days=days)
+
+        if len(training_data) < min_samples:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Insufficient training data: {len(training_data)} samples "
+                    f"(need at least {min_samples})"
+                ),
+            )
+
+        result = self.calibration_model.train(training_data)
+
+        return {
+            "model_version": result.model_version,
+            "r_squared": round(result.r_squared, 4),
+            "rmse": round(result.rmse, 2),
+            "mae": round(result.mae, 2),
+            "training_samples": result.training_samples,
+            "feature_importance": {
+                k: round(v, 4) for k, v in result.feature_importance.items()
+            },
+        }
+
+    # =====================================================================
     # Helper Methods
     # =====================================================================
+
+    async def _fetch_sensor_readings(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 50.0,
+    ) -> List[Dict]:
+        """Fetch sensor readings from Sensor Service as fusion-ready dicts."""
+        if not self.sensor_client:
+            return []
+
+        try:
+            readings = await self.sensor_client.get_recent_readings(
+                latitude, longitude, radius_km, limit=100
+            )
+            return [
+                {
+                    "latitude": r.latitude,
+                    "longitude": r.longitude,
+                    "pm25": r.pm25,
+                    "pm10": r.pm10,
+                    "temperature": 25.0,
+                    "humidity": 50.0,
+                }
+                for r in readings
+            ]
+        except Exception as e:
+            logger.warning("Error fetching sensor readings: %s", e)
+            return []
+
+    async def _fetch_satellite_cache(
+        self, latitude: float, longitude: float
+    ) -> Dict:
+        """Fetch satellite data from Redis cache."""
+        if not self.cache:
+            return {"grid_cells": []}
+
+        cached = await self.cache.get_aqi(latitude, longitude, 50.0)
+        if cached and cached.get("fused_pm25") is not None:
+            return {
+                "grid_cells": [
+                    {
+                        "lat": cached.get("location_lat", latitude),
+                        "lon": cached.get("location_lng", longitude),
+                        "value": cached["fused_pm25"],
+                    }
+                ]
+            }
+        return {"grid_cells": []}
+
+    async def _get_active_sensors(self) -> List[Dict]:
+        """Get list of active sensors from Sensor Service."""
+        if not self.sensor_client:
+            return []
+
+        try:
+            return await self.sensor_client.get_all_active_sensors()
+        except Exception as e:
+            logger.warning("Error fetching active sensors: %s", e)
+            return []
+
+    async def _get_training_pairs(
+        self, days: int = 30
+    ) -> List[tuple]:
+        """Get matched sensor-satellite pairs for training/evaluation.
+
+        Returns list of (feature_dict, satellite_reference_value) tuples.
+        """
+        pairs = []
+
+        if not self.sensor_client:
+            return pairs
+
+        try:
+            sensors = await self.sensor_client.get_all_active_sensors()
+            end = datetime.utcnow()
+            start = end - timedelta(days=days)
+
+            for sensor in sensors[:20]:  # Limit to 20 sensors for performance
+                sensor_id = sensor.get("sensor_id", sensor.get("id", ""))
+                if not sensor_id:
+                    continue
+
+                readings = await self.sensor_client.get_sensor_readings(
+                    sensor_id, start, end, limit=100
+                )
+
+                for reading in readings:
+                    if reading.pm25 <= 0:
+                        continue
+
+                    # Look up satellite reference from cache
+                    cached = await self.cache.get_aqi(
+                        reading.latitude, reading.longitude, 10.0
+                    )
+                    if not cached or cached.get("fused_pm25") is None:
+                        continue
+
+                    features = {
+                        "raw_pm25": reading.pm25,
+                        "temperature": 25.0,
+                        "humidity": 50.0,
+                        "satellite_aod": 0.5,
+                        "hour": reading.timestamp.hour,
+                        "day_of_week": reading.timestamp.weekday(),
+                    }
+                    pairs.append((features, cached["fused_pm25"]))
+
+        except Exception as e:
+            logger.warning("Error collecting training pairs: %s", e)
+
+        return pairs
 
     async def _get_pollutants_for_location(
         self,
@@ -394,7 +943,7 @@ class AirQualityApplicationService:
         lng: float,
     ) -> List[SensorDataPoint]:
         """Get historical sensor data for forecasting."""
-        if not self.sensor_repository:
+        if not self.sensor_client:
             # Generate sample data for development
             now = datetime.utcnow()
             return [
@@ -407,7 +956,7 @@ class AirQualityApplicationService:
             ]
 
         # Query repository for historical data
-        return await self.sensor_repository.get_historical(lat, lng, hours=24)
+        return await self.sensor_client.get_historical(lat, lng, hours=24)
 
     def _empty_result(self, lat: float, lng: float) -> GetCurrentAQIResult:
         """Create an empty result when no data is available."""
@@ -574,6 +1123,11 @@ class AirQualityApplicationService:
 def get_air_quality_service() -> AsyncGenerator[AirQualityApplicationService, None]:
     """FastAPI dependency that yields an AirQualityApplicationService instance.
 
+    .. deprecated::
+        Prefer ``src.interfaces.api.dependencies.get_air_quality_service``
+        which reuses lifespan-managed singletons instead of creating new
+        connections per request.
+
     Usage::
 
         @router.get("/aqi/current")
@@ -587,7 +1141,6 @@ def get_air_quality_service() -> AsyncGenerator[AirQualityApplicationService, No
     from ...infrastructure.external.sensor_service_client import SensorServiceClient
 
     async def _generate():
-        # Initialize infrastructure
         cache = RedisCache()
         await cache.connect()
 
@@ -597,7 +1150,6 @@ def get_air_quality_service() -> AsyncGenerator[AirQualityApplicationService, No
         sensor_client = SensorServiceClient()
         await sensor_client.connect()
 
-        # Initialize domain services
         aqi_calculator = AQICalculator()
         prediction_service = PredictionService()
 
@@ -607,6 +1159,8 @@ def get_air_quality_service() -> AsyncGenerator[AirQualityApplicationService, No
             cache=cache,
             google_client=google_client,
             sensor_client=sensor_client,
+            calibration_model=CalibrationModel(),
+            cross_validator=CrossValidationService(),
         )
         try:
             yield service

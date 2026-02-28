@@ -223,3 +223,138 @@ class HistoryRequest(BaseModel):
     start: datetime = Field(..., description="Start timestamp")
     end: datetime = Field(..., description="End timestamp")
     limit: int = Field(default=1000, ge=1, le=10000, description="Max readings")
+
+
+# =============================================================================
+# Fused Data Schemas
+# =============================================================================
+
+
+class FusedDataPointResponse(BaseModel):
+    """Response schema for a single fused data point."""
+
+    latitude: float = Field(..., description="Location latitude")
+    longitude: float = Field(..., description="Location longitude")
+    timestamp: datetime = Field(..., description="Observation timestamp")
+    sensor_pm25: Optional[float] = Field(default=None, description="Raw sensor PM2.5")
+    sensor_pm10: Optional[float] = Field(default=None, description="Raw sensor PM10")
+    satellite_aod: Optional[float] = Field(default=None, description="Satellite AOD value")
+    fused_pm25: Optional[float] = Field(default=None, description="Calibrated PM2.5")
+    fused_pm10: Optional[float] = Field(default=None, description="Calibrated PM10")
+    fused_aqi: Optional[int] = Field(default=None, description="Fused AQI value")
+    confidence: float = Field(default=0.0, ge=0, le=1, description="Data confidence score")
+    data_sources: List[str] = Field(default_factory=list, description="Contributing sources")
+
+    model_config = {"from_attributes": True}
+
+
+class FusedDataResponse(BaseModel):
+    """Response schema for fused data."""
+
+    data: List[FusedDataPointResponse] = Field(default_factory=list)
+    total: int = Field(default=0, description="Total fused points")
+    average_confidence: float = Field(default=0.0, description="Mean confidence score")
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = {"from_attributes": True}
+
+
+class FusedDataListResponse(BaseModel):
+    """Paginated response for fused data queries."""
+
+    data: List[FusedDataPointResponse] = Field(default_factory=list)
+    total: int = Field(default=0, description="Total fused points")
+
+    model_config = {"from_attributes": True}
+
+
+# =============================================================================
+# Validation Schemas
+# =============================================================================
+
+
+class SensorValidationResult(BaseModel):
+    """Validation result for a single sensor."""
+
+    sensor_id: str = Field(..., description="Sensor identifier")
+    sample_count: int = Field(default=0, description="Number of comparison samples")
+    correlation: float = Field(default=0.0, description="Pearson correlation coefficient")
+    bias: float = Field(default=0.0, description="Mean bias (sensor - satellite)")
+    rmse: float = Field(default=0.0, description="Root Mean Square Error")
+    mae: float = Field(default=0.0, description="Mean Absolute Error")
+    is_valid: bool = Field(default=False, description="Whether sensor passes validation")
+    status: str = Field(default="unknown", description="Qualitative assessment")
+
+    model_config = {"from_attributes": True}
+
+
+class ValidationReportResponse(BaseModel):
+    """Response schema for cross-validation report."""
+
+    total_sensors: int = Field(default=0, description="Total sensors evaluated")
+    valid_sensors: int = Field(default=0, description="Sensors passing validation")
+    invalid_sensors: int = Field(default=0, description="Sensors failing validation")
+    average_correlation: float = Field(default=0.0, description="Mean correlation")
+    average_bias: float = Field(default=0.0, description="Mean bias")
+    sensors: List[SensorValidationResult] = Field(
+        default_factory=list, description="Per-sensor validation results"
+    )
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = {"from_attributes": True}
+
+
+# =============================================================================
+# Calibration Schemas
+# =============================================================================
+
+
+class CalibrationStatusResponse(BaseModel):
+    """Response schema for calibration model status."""
+
+    is_trained: bool = Field(default=False, description="Whether model is trained")
+    model_path: str = Field(default="", description="Path to model file")
+    feature_names: List[str] = Field(default_factory=list, description="Model features")
+    last_trained: Optional[datetime] = Field(default=None, description="Last training time")
+
+    model_config = {"from_attributes": True}
+
+
+class CalibrationMetricsResponse(BaseModel):
+    """Response schema for calibration model metrics."""
+
+    r_squared: float = Field(default=0.0, description="R-squared score")
+    rmse: float = Field(default=0.0, description="Root Mean Square Error")
+    mae: float = Field(default=0.0, description="Mean Absolute Error")
+    bias: float = Field(default=0.0, description="Mean bias")
+    feature_importance: Dict = Field(
+        default_factory=dict, description="Feature importance scores"
+    )
+
+    model_config = {"from_attributes": True}
+
+
+class TrainCalibrationRequest(BaseModel):
+    """Request schema for retraining calibration model."""
+
+    training_days: int = Field(
+        default=30, ge=7, le=365, description="Days of training data to use"
+    )
+    min_samples: int = Field(
+        default=50, ge=50, le=10000, description="Minimum training samples required"
+    )
+
+
+class TrainingResultResponse(BaseModel):
+    """Response schema for calibration training result."""
+
+    model_version: str = Field(..., description="Model version identifier")
+    r_squared: float = Field(..., description="Training R-squared")
+    rmse: float = Field(..., description="Training RMSE")
+    mae: float = Field(..., description="Training MAE")
+    training_samples: int = Field(..., description="Number of training samples")
+    feature_importance: Dict = Field(
+        default_factory=dict, description="Feature importance scores"
+    )
+
+    model_config = {"from_attributes": True}
