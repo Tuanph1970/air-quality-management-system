@@ -34,35 +34,21 @@ case "$confirm" in
 esac
 echo ""
 
-# ── 1. Stop and remove containers + networks ──────────────────────────────────
-echo "[INFO]  Stopping and removing containers and networks..."
-docker compose -f "$COMPOSE_FILE" down --remove-orphans
+# ── 1. Stop containers, remove networks, volumes, and all project images ───────
+echo "[INFO]  Stopping containers and removing networks, volumes, and images..."
+# --rmi all  : removes every image referenced by the compose file (built + pulled)
+# --volumes  : removes named and anonymous volumes
+docker compose -f "$COMPOSE_FILE" down --remove-orphans --volumes --rmi all 2>/dev/null || true
 
-# ── 2. Remove named volumes (database data, etc.) ─────────────────────────────
-echo "[INFO]  Removing volumes..."
-docker compose -f "$COMPOSE_FILE" down --volumes 2>/dev/null || true
+# ── 2. Remove ALL build cache (no time filter) ────────────────────────────────
+echo "[INFO]  Pruning all build cache..."
+docker builder prune -f 2>/dev/null || true
 
-# ── 3. Remove project images ──────────────────────────────────────────────────
-echo "[INFO]  Removing project Docker images..."
-PROJECT_NAME=$(basename "$PROJECT_ROOT" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]-_')
+# ── 3. Remove remaining dangling images ───────────────────────────────────────
+echo "[INFO]  Removing dangling images..."
+docker image prune -f 2>/dev/null || true
 
-# Collect image IDs for images built by this compose project
-IMAGE_IDS=$(docker compose -f "$COMPOSE_FILE" images -q 2>/dev/null || true)
-if [ -n "$IMAGE_IDS" ]; then
-  echo "  Removing images: $(echo "$IMAGE_IDS" | tr '\n' ' ')"
-  echo "$IMAGE_IDS" | xargs docker rmi -f 2>/dev/null || true
-else
-  # Fallback: remove by name pattern (project prefix)
-  docker images --format "{{.Repository}}:{{.Tag}}" \
-    | grep -E "^(${PROJECT_NAME}|air-quality)" \
-    | xargs docker rmi -f 2>/dev/null || true
-fi
-
-# ── 4. Remove dangling build cache ───────────────────────────────────────────
-echo "[INFO]  Pruning dangling build cache..."
-docker builder prune -f --filter "until=24h" 2>/dev/null || true
-
-# ── 5. Final status ───────────────────────────────────────────────────────────
+# ── 4. Final status ───────────────────────────────────────────────────────────
 echo ""
 echo "[INFO]  Verifying removal — remaining containers:"
 REMAINING=$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null || true)
@@ -71,6 +57,10 @@ if [ -z "$REMAINING" ]; then
 else
   docker compose -f "$COMPOSE_FILE" ps
 fi
+
+echo ""
+echo "[INFO]  Disk usage after cleanup:"
+docker system df
 
 echo ""
 echo "[INFO]  Undeploy complete. All project resources have been removed."

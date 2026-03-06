@@ -2,7 +2,7 @@
 # =============================================================================
 # deploy.sh — Build and start the entire AQMS stack
 # =============================================================================
-set -euo pipefail
+set -uo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
@@ -49,43 +49,70 @@ docker compose -f "$COMPOSE_FILE" build $BUILD_FLAGS
 # ── 4. Start stack ─────────────────────────────────────────────────────────────
 echo ""
 echo "[INFO]  Starting all services..."
-docker compose -f "$COMPOSE_FILE" up -d
+# Allow partial failures — individual health is checked below
+docker compose -f "$COMPOSE_FILE" up -d || true
 
 # ── 5. Wait for health checks ─────────────────────────────────────────────────
 echo ""
 echo "[INFO]  Waiting for services to become healthy..."
 
+FAILED_SERVICES=()
+
+# Uses `docker inspect` to avoid NDJSON parsing issues with `docker compose ps --format json`
 wait_healthy() {
   local service="$1"
-  local max_wait="${2:-60}"
+  local max_wait="${2:-120}"
   local elapsed=0
-  local interval=3
+  local interval=5
+  local container="aqms-${service}"
 
   while [ $elapsed -lt $max_wait ]; do
-    status=$(docker compose -f "$COMPOSE_FILE" ps "$service" --format json 2>/dev/null \
-             | python3 -c "import sys,json; data=json.load(sys.stdin); print(data.get('Health','unknown'))" 2>/dev/null || echo "unknown")
-    if [ "$status" = "healthy" ]; then
-      echo "  ✓  $service is healthy"
+    local inspect_out
+    inspect_out=$(docker inspect "$container" \
+      --format='{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' \
+      2>/dev/null || echo "notfound no-healthcheck")
+
+    local cstate chealth
+    cstate=$(echo "$inspect_out" | awk '{print $1}')
+    chealth=$(echo "$inspect_out" | awk '{print $2}')
+
+    if [ "$chealth" = "healthy" ]; then
+      echo "  ✓  $service is healthy (${elapsed}s)"
       return 0
     fi
+
+    # Container exited / crashed — no point waiting further
+    if [ "$cstate" = "exited" ] || [ "$cstate" = "dead" ]; then
+      echo "  ✗  $service stopped unexpectedly (state=$cstate). Last 40 log lines:"
+      docker logs --tail=40 "$container" 2>&1 | sed 's/^/        /'
+      return 1
+    fi
+
     sleep $interval
     elapsed=$((elapsed + interval))
   done
 
-  echo "  ⚠  $service did not become healthy within ${max_wait}s (current: $status)"
-  return 0  # non-fatal
+  echo "  ⚠  $service not healthy after ${max_wait}s (state=$cstate, health=$chealth)"
+  return 1
 }
 
-wait_healthy mysql      90
-wait_healthy rabbitmq   90
-wait_healthy redis      30
-wait_healthy user-service      60
-wait_healthy factory-service   60
-wait_healthy sensor-service    60
-wait_healthy alert-service     60
-wait_healthy air-quality-service 60
-wait_healthy remote-sensing-service 60
-wait_healthy api-gateway       60
+check() {
+  local svc="$1"; shift
+  if ! wait_healthy "$svc" "$@"; then
+    FAILED_SERVICES+=("$svc")
+  fi
+}
+
+check mysql      120
+check rabbitmq   120
+check redis       60
+check user-service      120
+check factory-service   120
+check sensor-service    120
+check alert-service     150
+check air-quality-service 120
+check remote-sensing-service 120
+check api-gateway       120
 
 # ── 6. Summary ────────────────────────────────────────────────────────────────
 echo ""
@@ -104,4 +131,15 @@ echo "  API Docs        : http://localhost:8000/docs"
 echo "  RabbitMQ Mgmt   : http://localhost:15672  (guest/guest)"
 echo "========================================"
 echo ""
-echo "[INFO]  Deployment complete."
+
+if [ ${#FAILED_SERVICES[@]} -gt 0 ]; then
+  echo "[WARN]  The following services did not reach healthy state:"
+  for svc in "${FAILED_SERVICES[@]}"; do
+    echo "          • $svc  (run: docker logs aqms-${svc})"
+  done
+  echo ""
+  echo "[INFO]  Deployment finished with warnings."
+  exit 1
+else
+  echo "[INFO]  Deployment complete — all services healthy."
+fi

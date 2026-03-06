@@ -242,8 +242,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 8
+      start_period: 90s
     depends_on:
       mysql:
         condition: service_healthy
