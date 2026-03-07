@@ -265,6 +265,7 @@ The 5 databases are created automatically by MySQL on first startup via `scripts
 - `alert_db`
 - `user_db`
 - `remote_sensing_db`
+- `station_db` (NEW - for station service)
 
 ### Verify databases were created
 ```bash

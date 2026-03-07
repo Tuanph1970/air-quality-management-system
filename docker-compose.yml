@@ -385,6 +385,92 @@ services:
       - aqms-network
 
   # ===========================================================================
+  # STATION SERVICE - Air quality station management & data ingestion
+  # ===========================================================================
+  station-service:
+    build:
+      context: ./services/station-service
+      dockerfile: Dockerfile
+    container_name: aqms-station-service
+    ports:
+      - "${STATION_SERVICE_PORT:-8007}:8007"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=station-service
+      - SERVICE_PORT=8007
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_db?charset=utf8mb4
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
+      - USE_FAKE_DATA=${USE_FAKE_DATA:-False}
+      - FAKE_DATA_STATION_COUNT=${FAKE_DATA_STATION_COUNT:-5}
+      - FAKE_DATA_INTERVAL_SECONDS=${FAKE_DATA_INTERVAL_SECONDS:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/station-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8007/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # PURPLEAIR INGESTION SERVICE - PurpleAir device data ingestion
+  # ===========================================================================
+  purpleair-ingestion-service:
+    build:
+      context: ./services/purpleair-ingestion-service
+      dockerfile: Dockerfile
+    container_name: aqms-purpleair-ingestion-service
+    ports:
+      - "${PURPLEAIR_INGESTION_PORT:-8008}:8008"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=purpleair-ingestion-service
+      - SERVICE_PORT=8008
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - PURPLEAIR_API_KEY=${PURPLEAIR_API_KEY:-}
+      - PURPLEAIR_USE_FAKE_DATA=${PURPLEAIR_USE_FAKE_DATA:-False}
+      - PURPLEAIR_FAKE_DATA_INTERVAL=${PURPLEAIR_FAKE_DATA_INTERVAL:-60}
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+    volumes:
+      - ./services/purpleair-ingestion-service/src:/app/src
+      - ./services/shared:/app/shared
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # FRONTEND - Vite dev server with hot-reload (development)
   # ===========================================================================
   frontend-dev:

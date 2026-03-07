@@ -27,8 +27,10 @@ from .routes import (
     auth_router,
     dashboard_router,
     factory_router,
+    purpleair_router,
     satellite_router,
     sensor_router,
+    station_router,
 )
 from .utils.service_client import registry
 
@@ -112,6 +114,8 @@ def create_app() -> FastAPI:
             "air-quality-service": settings.AIR_QUALITY_SERVICE_URL,
             "user-service": settings.USER_SERVICE_URL,
             "remote-sensing-service": settings.REMOTE_SENSING_SERVICE_URL,
+            "station-service": settings.STATION_SERVICE_URL,
+            "purpleair-ingestion-service": settings.PURPLEAIR_INGESTION_SERVICE_URL,
         }
 
         for name, url in services.items():
@@ -137,6 +141,8 @@ def create_app() -> FastAPI:
                 "violations": "/api/v1/violations",
                 "air-quality": "/api/v1/air-quality",
                 "satellite": "/api/v1/satellite",
+                "stations": "/api/v1/stations",
+                "purpleair": "/api/v1/purpleair",
                 "dashboard": "/api/v1/dashboard",
             },
         }
@@ -148,6 +154,8 @@ def create_app() -> FastAPI:
     app.include_router(alert_router)
     app.include_router(air_quality_router)
     app.include_router(satellite_router)
+    app.include_router(station_router)  # Station management
+    app.include_router(purpleair_router)  # PurpleAir ingestion
     app.include_router(dashboard_router)  # Requires auth
 
     logger.info("All routes registered")
@@ -168,6 +176,8 @@ def create_app() -> FastAPI:
         registry.register("air-quality-service", settings.AIR_QUALITY_SERVICE_URL)
         registry.register("user-service", settings.USER_SERVICE_URL)
         registry.register("remote-sensing-service", settings.REMOTE_SENSING_SERVICE_URL)
+        registry.register("station-service", settings.STATION_SERVICE_URL)
+        registry.register("purpleair-ingestion-service", settings.PURPLEAIR_INGESTION_SERVICE_URL)
 
         # Connect all clients
         await registry.connect_all()
