@@ -1,4 +1,4 @@
-"""PurpleAir Ingestion Service - Python dependencies."""
+# PurpleAir Ingestion Service - Python dependencies
 
 # Web framework
 fastapi==0.109.0

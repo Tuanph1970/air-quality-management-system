@@ -17,6 +17,7 @@ A step-by-step guide to deploy the full system on a new machine from scratch.
 9. [Common Commands](#9-common-commands)
 10. [Troubleshooting](#10-troubleshooting)
 11. [Port Reference](#11-port-reference)
+12. [WRF Service Deployment (Weather Forecasting)](#12-wrf-service-deployment-weather-forecasting)
 
 ---
 
@@ -147,6 +148,17 @@ NASA_EARTHDATA_TOKEN=        # NASA MODIS satellite data
 SENTINEL_HUB_CLIENT_ID=      # Sentinel Hub imagery
 SENTINEL_HUB_CLIENT_SECRET=
 ```
+
+### WRF Service (Optional)
+
+For weather forecasting using the WRF model:
+```bash
+WRF_SERVICE_PORT=8009
+WRF_NUM_PROCESSES=4
+WRF_USE_SAMPLE_DATA=True      # Set to False when WRF binaries are installed
+```
+
+> See [Section 12](#12-wrf-service-deployment-weather-forecasting) for detailed WRF deployment instructions.
 
 ### City Bounding Box (Hanoi defaults)
 
@@ -499,6 +511,7 @@ docker system prune -a
 | 8004 | 8004 | Air Quality Service | aqms-air-quality-service |
 | 8005 | 8005 | User Service | aqms-user-service |
 | 8006 | 8006 | Remote Sensing Service | aqms-remote-sensing-service |
+| **8009** | 8009 | **WRF Service** | **aqms-wrf-service** |
 | **3307** | 3306 | MySQL 8.0 | aqms-mysql |
 | 5672 | 5672 | RabbitMQ (AMQP) | aqms-rabbitmq |
 | 15672 | 15672 | RabbitMQ Management | aqms-rabbitmq |
@@ -507,6 +520,147 @@ docker system prune -a
 ### Internal Docker network
 
 All containers communicate on the `aqms-network` bridge network using service names as hostnames (e.g., `mysql:3306`, `rabbitmq:5672`, `redis:6379`).
+
+---
+
+## 12. WRF Service Deployment (Weather Forecasting)
+
+The WRF (Weather Research and Forecasting) service provides high-resolution meteorological data for air quality modeling. It downloads GFS boundary conditions and runs WRF model simulations.
+
+### WRF Service Configuration
+
+Add the following to your `.env` file:
+
+```bash
+# ── WRF Service ──────────────────────────────────────────────────────────────
+WRF_SERVICE_PORT=8009
+WRF_NUM_PROCESSES=4
+WRF_USE_SAMPLE_DATA=True      # Set to False when WRF binaries are installed
+```
+
+### Accessing WRF Service
+
+| URL | Description |
+|-----|-------------|
+| `http://localhost:8009/health` | WRF Service health check |
+| `http://localhost:8009/docs` | WRF Service Swagger UI |
+| `http://localhost:3000/wrf` | **WRF Configuration GUI** |
+
+### WRF Data Storage
+
+The WRF service uses a dedicated Docker volume `wrf_data` for:
+- GFS boundary condition data (`/app/data/gfs`)
+- WRF model output (`/app/data/wrf_output`)
+
+### Production Deployment with WRF Binaries
+
+**Important:** The WRF model binaries are **not included** in the default Docker image. For production weather forecasting:
+
+#### Option 1: Mount Pre-installed WRF Binaries
+
+If you have WRF and WPS already installed on your host system:
+
+```yaml
+# In docker-compose.yml, add volume mounts:
+volumes:
+  - /path/to/your/WRFV4:/app/wrf/WRFV4:ro
+  - /path/to/your/WPS:/app/wrf/WPS:ro
+  - /path/to/your/WPS_GEOG:/app/wrf/WPS_GEOG:ro
+```
+
+Then set in `.env`:
+```bash
+WRF_USE_SAMPLE_DATA=False
+```
+
+#### Option 2: Build WRF-enabled Image
+
+Create a custom Dockerfile that installs WRF:
+
+```dockerfile
+FROM python:3.11-slim
+
+# Install WRF dependencies
+RUN apt-get update && apt-get install -y \
+    gfortran gcc libopenmpi-dev libnetcdf-dev libjasper-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and compile WRF and WPS
+# (Follow WRF installation guide at https://www2.mmm.ucar.edu/wrf/users/)
+
+# Copy application code
+COPY --from=builder /install /usr/local
+COPY . .
+```
+
+#### Option 3: Use Sample Data Mode (Development/Testing)
+
+For development without WRF binaries, the service runs in sample data mode:
+
+```bash
+WRF_USE_SAMPLE_DATA=True
+```
+
+This creates simulated forecast data for testing the integration.
+
+### WRF Service Health Check
+
+```bash
+# Check WRF service status
+curl http://localhost:8009/health
+
+# Expected response:
+# {"status": "healthy", "service": "wrf-service", "port": 8009}
+```
+
+### Running a WRF Simulation
+
+1. Open `http://localhost:3000/wrf` in your browser
+2. Click "New Simulation"
+3. Configure domain bounds (latitude/longitude)
+4. Set resolution and simulation duration
+5. Select physics parameterization schemes
+6. Click "Create Simulation"
+7. Click "Start" to begin the forecast run
+
+### WRF API Endpoints
+
+```bash
+# List all simulations
+curl http://localhost:8000/api/v1/wrf/simulations
+
+# Get recommended configuration for a region
+curl "http://localhost:8000/api/v1/wrf/recommend-config?center_lat=21.0&center_lon=105.75&region_radius_km=100"
+
+# Start a simulation
+curl -X POST http://localhost:8000/api/v1/wrf/simulations/{id}/start
+```
+
+### Troubleshooting WRF Service
+
+```bash
+# View WRF service logs
+docker compose logs -f wrf-service
+
+# Check WRF installation status
+curl http://localhost:8009/api/v1/wrf/check-installation
+
+# View downloaded GFS data
+docker exec aqms-wrf-service ls -la /app/data/gfs
+
+# View WRF output files
+docker exec aqms-wrf-service ls -la /app/data/wrf_output
+```
+
+### Resource Requirements for WRF
+
+| Simulation Size | RAM Required | CPU Cores | Estimated Runtime |
+|----------------|--------------|-----------|-------------------|
+| 9km resolution, 100×100km | 4 GB | 4 | 1-2 hours |
+| 3km resolution, 100×100km | 8 GB | 8 | 4-6 hours |
+| 1km resolution, 100×100km | 16 GB | 16 | 12-24 hours |
+
+> **Note:** WRF is computationally intensive. For production use, ensure adequate CPU and memory resources.
 
 ---
 

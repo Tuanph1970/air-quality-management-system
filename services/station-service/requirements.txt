@@ -1,4 +1,4 @@
-"""Station Service - Python dependencies."""
+# Station Service - Python dependencies
 
 # Web framework
 fastapi==0.109.0

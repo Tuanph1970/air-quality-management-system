@@ -1,0 +1,1 @@
+"""Entities for WRF Service."""

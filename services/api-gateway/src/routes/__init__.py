@@ -8,6 +8,7 @@ from .purpleair_routes import router as purpleair_router
 from .satellite_routes import router as satellite_router
 from .sensor_routes import router as sensor_router
 from .station_routes import router as station_router
+from .wrf_routes import router as wrf_router
 
 __all__ = [
     "air_quality_router",
@@ -19,4 +20,5 @@ __all__ = [
     "satellite_router",
     "sensor_router",
     "station_router",
+    "wrf_router",
 ]

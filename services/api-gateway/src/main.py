@@ -31,6 +31,7 @@ from .routes import (
     satellite_router,
     sensor_router,
     station_router,
+    wrf_router,
 )
 from .utils.service_client import registry
 
@@ -116,6 +117,7 @@ def create_app() -> FastAPI:
             "remote-sensing-service": settings.REMOTE_SENSING_SERVICE_URL,
             "station-service": settings.STATION_SERVICE_URL,
             "purpleair-ingestion-service": settings.PURPLEAIR_INGESTION_SERVICE_URL,
+            "wrf-service": settings.WRF_SERVICE_URL,
         }
 
         for name, url in services.items():
@@ -143,6 +145,7 @@ def create_app() -> FastAPI:
                 "satellite": "/api/v1/satellite",
                 "stations": "/api/v1/stations",
                 "purpleair": "/api/v1/purpleair",
+                "wrf": "/api/v1/wrf",
                 "dashboard": "/api/v1/dashboard",
             },
         }
@@ -156,6 +159,7 @@ def create_app() -> FastAPI:
     app.include_router(satellite_router)
     app.include_router(station_router)  # Station management
     app.include_router(purpleair_router)  # PurpleAir ingestion
+    app.include_router(wrf_router)  # WRF weather forecasting
     app.include_router(dashboard_router)  # Requires auth
 
     logger.info("All routes registered")
@@ -178,6 +182,7 @@ def create_app() -> FastAPI:
         registry.register("remote-sensing-service", settings.REMOTE_SENSING_SERVICE_URL)
         registry.register("station-service", settings.STATION_SERVICE_URL)
         registry.register("purpleair-ingestion-service", settings.PURPLEAIR_INGESTION_SERVICE_URL)
+        registry.register("wrf-service", settings.WRF_SERVICE_URL)
 
         # Connect all clients
         await registry.connect_all()

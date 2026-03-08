@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     REMOTE_SENSING_SERVICE_URL: str = "http://remote-sensing-service:8006"
     STATION_SERVICE_URL: str = "http://station-service:8007"
     PURPLEAIR_INGESTION_SERVICE_URL: str = "http://purpleair-ingestion-service:8008"
+    WRF_SERVICE_URL: str = "http://wrf-service:8009"
 
     # =========================================================================
     # JWT / Authentication

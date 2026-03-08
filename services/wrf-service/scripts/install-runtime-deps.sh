@@ -1,11 +1,16 @@
 #!/bin/bash
-# Install runtime dependencies for remote-sensing service
-# Package names vary by Debian version
+# =============================================================================
+# WRF Service - Runtime Dependencies Installation Script
+# =============================================================================
+# This script installs runtime dependencies for the WRF service Docker image.
+# Package names may vary between Debian versions.
+# =============================================================================
 
 set -e
 
-echo "Installing remote-sensing service runtime dependencies..."
+echo "Installing WRF Service runtime dependencies..."
 
+# Update package lists
 apt-get update
 
 # Install HDF5 runtime library
@@ -19,6 +24,9 @@ elif apt-cache show libhdf5-103-1 &> /dev/null; then
 elif apt-cache show libhdf5-103 &> /dev/null; then
     echo "Installing libhdf5-103..."
     apt-get install -y --no-install-recommends libhdf5-103
+elif apt-cache show libhdf5-100 &> /dev/null; then
+    echo "Installing libhdf5-100..."
+    apt-get install -y --no-install-recommends libhdf5-100
 else
     echo "Installing libhdf5-310 (fallback)..."
     apt-get install -y --no-install-recommends libhdf5-310 || \
@@ -33,37 +41,22 @@ if apt-cache show libnetcdf20 &> /dev/null; then
 elif apt-cache show libnetcdf19 &> /dev/null; then
     echo "Installing libnetcdf19..."
     apt-get install -y --no-install-recommends libnetcdf19
+elif apt-cache show libnetcdf-20 &> /dev/null; then
+    echo "Installing libnetcdf-20..."
+    apt-get install -y --no-install-recommends libnetcdf-20
+elif apt-cache show libnetcdf-19 &> /dev/null; then
+    echo "Installing libnetcdf-19..."
+    apt-get install -y --no-install-recommends libnetcdf-19
+elif apt-cache show libnetcdf-18 &> /dev/null; then
+    echo "Installing libnetcdf-18..."
+    apt-get install -y --no-install-recommends libnetcdf-18
 else
     echo "Installing libnetcdf20 (fallback)..."
     apt-get install -y --no-install-recommends libnetcdf20 || \
     apt-get install -y --no-install-recommends libnetcdf-dev
 fi
 
-# Install GDAL runtime library
-# Try newer package names first (Debian 12+/trixie), then older ones
-if apt-cache show libgdal3.6 &> /dev/null; then
-    echo "Installing libgdal3.6..."
-    apt-get install -y --no-install-recommends libgdal3.6
-elif apt-cache show libgdal3.4 &> /dev/null; then
-    echo "Installing libgdal3.4..."
-    apt-get install -y --no-install-recommends libgdal3.4
-elif apt-cache show libgdal32 &> /dev/null; then
-    echo "Installing libgdal32..."
-    apt-get install -y --no-install-recommends libgdal32
-elif apt-cache show libgdal30 &> /dev/null; then
-    echo "Installing libgdal30..."
-    apt-get install -y --no-install-recommends libgdal30
-else
-    echo "Installing libgdal (fallback)..."
-    apt-get install -y --no-install-recommends libgdal || \
-    apt-get install -y --no-install-recommends libgdal-dev
-fi
-
-# Install libpq5 for PostgreSQL
-if apt-cache show libpq5 &> /dev/null; then
-    echo "Installing libpq5..."
-    apt-get install -y --no-install-recommends libpq5
-fi
-
+# Clean up
 rm -rf /var/lib/apt/lists/*
-echo "Dependencies installed successfully"
+
+echo "Runtime dependencies installed successfully."

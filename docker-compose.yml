@@ -114,6 +114,7 @@ services:
       - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
       - USER_SERVICE_URL=http://user-service:8005
       - REMOTE_SENSING_SERVICE_URL=http://remote-sensing-service:8006
+      - WRF_SERVICE_URL=http://wrf-service:8009
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/api-gateway/src:/app/src
@@ -135,6 +136,8 @@ services:
       user-service:
         condition: service_healthy
       remote-sensing-service:
+        condition: service_healthy
+      wrf-service:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -471,6 +474,55 @@ services:
       - aqms-network
 
   # ===========================================================================
+  # WRF SERVICE - Weather Research and Forecasting Model
+  # ===========================================================================
+  wrf-service:
+    build:
+      context: ./services/wrf-service
+      dockerfile: Dockerfile
+    container_name: aqms-wrf-service
+    ports:
+      - "${WRF_SERVICE_PORT:-8009}:8009"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=wrf-service
+      - SERVICE_PORT=8009
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/wrf_db?charset=utf8mb4
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - WRF_DATA_DIR=/app/data
+      - GFS_DATA_DIR=/app/data/gfs
+      - WRF_OUTPUT_DIR=/app/data/wrf_output
+      - WRF_NUM_PROCESSES=${WRF_NUM_PROCESSES:-4}
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      # Use sample data mode when WRF binaries are not installed
+      - WRF_USE_SAMPLE_DATA=${WRF_USE_SAMPLE_DATA:-True}
+    volumes:
+      - ./services/wrf-service/src:/app/src
+      - ./services/shared:/app/shared
+      - wrf_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8009/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # FRONTEND - Vite dev server with hot-reload (development)
   # ===========================================================================
   frontend-dev:
@@ -543,6 +595,8 @@ volumes:
   mysql_data:
     driver: local
   satellite_data:
+    driver: local
+  wrf_data:
     driver: local
   redis_data:
     driver: local
