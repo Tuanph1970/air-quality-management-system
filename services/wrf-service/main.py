@@ -46,7 +46,7 @@ def main() -> None:
     )
 
     uvicorn.run(
-        "src.interfaces.api.routes:app",
+        "src.app:app",
         host="0.0.0.0",
         port=settings.SERVICE_PORT,
         reload=settings.DEBUG,

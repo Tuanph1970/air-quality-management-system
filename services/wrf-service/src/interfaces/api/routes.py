@@ -32,8 +32,7 @@ async def lifespan(app: FastAPI):
         await db_mgr.create_tables()
         logger.info("Database tables created/verified")
     except Exception as e:
-        logger.error("Database initialization failed: %s", e)
-        raise
+        logger.warning("Database initialization failed: %s", e)
     yield
     logger.info("Shutting down %s...", settings.SERVICE_NAME)
 
