@@ -1,12 +1,14 @@
 """FastAPI routes for WRF Service."""
 import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, FastAPI, Query
 from fastapi.responses import JSONResponse
 
-from ..config import settings
-from .dependencies import get_wrf_application_service, get_wrf_controller
+from ...config import settings
+from ...infrastructure.persistence.database import get_db_manager
+from .dependencies import get_wrf_controller
 from .schemas import (
     WRFSimulationCreateSchema,
     WRFSimulationDetailSchema,
@@ -19,6 +21,22 @@ from .schemas import (
 from .wrf_controller import WRFController
 
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle."""
+    logger.info("Starting %s...", settings.SERVICE_NAME)
+    try:
+        db_mgr = get_db_manager(settings.DATABASE_URL)
+        await db_mgr.create_tables()
+        logger.info("Database tables created/verified")
+    except Exception as e:
+        logger.error("Database initialization failed: %s", e)
+        raise
+    yield
+    logger.info("Shutting down %s...", settings.SERVICE_NAME)
+
 
 router = APIRouter(prefix="/api/v1/wrf", tags=["WRF Simulations"])
 
@@ -135,3 +153,12 @@ async def get_forecast_data(
         variable=variable,
         level=level,
     )
+
+
+app = FastAPI(
+    title="WRF Service",
+    description="WRF Weather Simulation Service for Air Quality Management",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+app.include_router(router)

@@ -55,8 +55,8 @@ class StationModel(Base):
     # Data retention
     data_retention_days = Column(Integer, default=1, nullable=False)
     
-    # Metadata
-    metadata = Column(JSON, nullable=True, default=dict)
+    # Metadata (named station_metadata to avoid conflict with SQLAlchemy reserved attribute)
+    station_metadata = Column(JSON, nullable=True, default=dict)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

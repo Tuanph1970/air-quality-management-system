@@ -9,9 +9,9 @@ import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from .src.core.config import settings
-from .src.core.publisher import get_publisher
-from .src.api.routes import router as purpleair_router
+from src.core.config import settings
+from src.core.publisher import get_publisher
+from src.api.routes import router as purpleair_router
 
 
 logger = logging.getLogger(__name__)

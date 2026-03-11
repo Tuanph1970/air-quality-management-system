@@ -45,16 +45,16 @@ class WRFSimulationModel(Base):
     )
 
     # Configuration stored as JSON
-    config_json: Mapped[dict] = mapped_column(
-        String, nullable=False, default_factory=dict
+    config_json: Mapped[str] = mapped_column(
+        Text, nullable=False, default="{}"
     )
 
     # File paths
     output_file_path: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, default=None
+        Text, nullable=True, default=None
     )
     gfs_data_path: Mapped[Optional[str]] = mapped_column(
-        String, nullable=True, default=None
+        Text, nullable=True, default=None
     )
     wrf_output_files: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True, default=None
