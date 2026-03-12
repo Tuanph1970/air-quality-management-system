@@ -16,6 +16,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import NotFoundPage from './pages/NotFoundPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import WRFPage from './pages/WRFPage';
+import StationsPage from './pages/StationsPage';
 import useAuthStore from './store/authStore';
 
 function ProtectedRoute({ children }) {
@@ -59,6 +60,7 @@ function App() {
           <Route path="map" element={<MapPage />} />
           <Route path="data-sources" element={<DataSourcesPage />} />
           <Route path="wrf" element={<WRFPage />} />
+          <Route path="stations" element={<StationsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

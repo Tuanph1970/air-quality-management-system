@@ -113,6 +113,9 @@ check alert-service     150
 check air-quality-service 120
 check remote-sensing-service 120
 check wrf-service       120
+check station-service   120
+check purpleair-ingestion-service 120
+check station-ingestion-service 120
 check api-gateway       120
 
 # ── 6. Summary ────────────────────────────────────────────────────────────────

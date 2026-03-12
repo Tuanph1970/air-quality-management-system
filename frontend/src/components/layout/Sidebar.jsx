@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Activity,
   Cloud,
+  MapPin,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/sensors', label: 'Sensors', icon: Radio },
   { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
   { path: '/map', label: 'Map View', icon: Map },
+  { path: '/stations', label: 'Monitoring Stations', icon: MapPin },
   { path: '/data-sources', label: 'Data Sources', icon: Cloud },
   { path: '/wrf', label: 'WRF Forecast', icon: Cloud },
   { path: '/reports', label: 'Reports', icon: FileText },
