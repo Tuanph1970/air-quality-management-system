@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import router
 from src.core.config import config
@@ -47,6 +48,17 @@ app = FastAPI(
     description="Service for ingesting environmental monitoring station data",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# =========================================================================
+# CORS Middleware - Enable frontend access
+# =========================================================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routes

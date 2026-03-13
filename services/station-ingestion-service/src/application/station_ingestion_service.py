@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.domain.entities.station import AirQualityReading, Station
 from src.domain.repositories.station_repository import StationRepository
 from src.infrastructure.external.station_api_client import StationAPIClient
+from src.core.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,15 @@ class StationIngestionService:
             Tuple of (total stations, new stations count)
         """
         logger.info("Starting station synchronization...")
+
+        # Use fake data mode for development/testing
+        if config.USE_FAKE_DATA:
+            logger.info("USE_FAKE_DATA is enabled. Using fake station data...")
+            from src.infrastructure.external.fake_data_seeder import create_fake_stations
+            stations = create_fake_stations()
+            saved_stations = await self.repository.save_stations(stations)
+            logger.info(f"Saved {len(saved_stations)} fake stations")
+            return len(saved_stations), len(saved_stations)
 
         # Fetch all stations from external API
         response = await self.api_client.get_automation_stations(page=0, size=1000)
@@ -82,45 +92,88 @@ class StationIngestionService:
 
         logger.info(f"Syncing AQI data from {from_time} to {to_time}")
 
-        # Fetch AQI data
-        response = await self.api_client.get_aqi_hours(
-            from_time=from_time,
-            to_time=to_time,
-            page=0,
-            size=100,
-        )
+        # Step 1: Ensure stations exist in database
+        valid_stations = await self.repository.get_all_stations()
+        valid_codes = {s.station_code for s in valid_stations}
 
-        if not response:
-            logger.error("Failed to fetch AQI data from external API")
-            return 0
+        if not valid_codes:
+            logger.info("No stations in database. Fetching stations from external API first...")
+            stations_synced, _ = await self.sync_stations()
+            if stations_synced == 0:
+                logger.error("Failed to fetch stations. Cannot sync AQI data without stations.")
+                return 0
+            # Reload valid codes after syncing stations
+            valid_stations = await self.repository.get_all_stations()
+            valid_codes = {s.station_code for s in valid_stations}
+            logger.info(f"Loaded {len(valid_codes)} stations for AQI sync")
 
-        content = response.get("content", [])
-        if not content:
-            logger.info("No AQI data found")
-            return 0
-
-        # Parse readings from response
-        # Response format: content is a list with one item that maps stationCode -> readings
+        # Step 2: Use fake data or fetch from external API
         readings: List[AirQualityReading] = []
 
-        for item in content:
-            if isinstance(item, dict):
-                for station_code, station_readings in item.items():
-                    if isinstance(station_readings, list):
-                        for reading_data in station_readings:
-                            try:
-                                reading = AirQualityReading.from_api_data(
-                                    station_code, reading_data
-                                )
-                                readings.append(reading)
-                            except Exception as e:
-                                logger.warning(f"Failed to parse reading: {e}")
+        if config.USE_FAKE_DATA:
+            # Generate fake readings for development/testing
+            logger.info("USE_FAKE_DATA is enabled. Generating fake AQI readings...")
+            from src.infrastructure.external.fake_data_seeder import create_fake_readings
+            hours = int((to_time - from_time).total_seconds() / 3600)
+            readings = create_fake_readings(list(valid_codes), hours=hours)
+            logger.info(f"Generated {len(readings)} fake readings")
+        else:
+            # Fetch AQI data from external API
+            response = await self.api_client.get_aqi_hours(
+                from_time=from_time,
+                to_time=to_time,
+                page=0,
+                size=100,
+            )
 
-        if not readings:
-            logger.info("No valid readings to save")
-            return 0
+            if not response:
+                logger.error("Failed to fetch AQI data from external API")
+                return 0
 
-        # Save readings
+            content = response.get("content", [])
+            if not content:
+                logger.info("No AQI data found")
+                return 0
+
+            # Step 3: Parse readings from response
+            # Response format: content is a list of objects with structure:
+            # { "stationCode": "...", "stationName": "...", "data": [ {...readings...} ] }
+            readings = []
+
+            for item in content:
+                if not isinstance(item, dict):
+                    continue
+
+                # Get station code from the item
+                station_code = item.get("stationCode")
+                station_readings = item.get("data", [])
+
+                # Skip if no station code or readings
+                if not station_code or not isinstance(station_code, str):
+                    logger.warning(f"Skipping item without stationCode: {item.keys() if isinstance(item, dict) else 'not a dict'}")
+                    continue
+
+                if not isinstance(station_readings, list):
+                    logger.warning(f"Skipping station {station_code} with non-list data")
+                    continue
+
+                for reading_data in station_readings:
+                    if not isinstance(reading_data, dict):
+                        continue
+                    try:
+                        reading = AirQualityReading.from_api_data(
+                            station_code, reading_data
+                        )
+                        readings.append(reading)
+                    except Exception as e:
+                        logger.warning(f"Failed to parse reading for station {station_code}: {e}")
+
+            if not readings:
+                logger.warning("No valid readings to save - check API response format")
+                logger.debug(f"Sample content item: {content[0] if content else 'empty'}")
+                return 0
+
+        # Step 4: Save readings
         saved = await self.repository.save_readings(readings)
         logger.info(f"Saved {len(saved)} readings")
 

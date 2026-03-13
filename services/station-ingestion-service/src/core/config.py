@@ -28,6 +28,9 @@ class Config:
     FETCH_INTERVAL_SECONDS: int = int(os.getenv("FETCH_INTERVAL_SECONDS", "300"))  # 5 minutes
     AQI_HOURS_PAGE_SIZE: int = int(os.getenv("AQI_HOURS_PAGE_SIZE", "100"))
 
+    # Fake data mode (for development/testing when external API is unavailable)
+    USE_FAKE_DATA: bool = os.getenv("USE_FAKE_DATA", "False").lower() in ("true", "1", "yes")
+
     @classmethod
     def from_env(cls) -> "Config":
         """Create config from environment variables."""

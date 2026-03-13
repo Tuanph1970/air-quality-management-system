@@ -522,6 +522,7 @@ services:
       - STATION_API_KEY=${STATION_API_KEY:-c9e03048-46e1-40b0-9b6b-f12accef9f5a}
       - FETCH_INTERVAL_SECONDS=${FETCH_INTERVAL_SECONDS:-300}
       - AQI_HOURS_PAGE_SIZE=${AQI_HOURS_PAGE_SIZE:-100}
+      - USE_FAKE_DATA=${USE_FAKE_DATA:-False}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./services/station-ingestion-service/src:/app/src
