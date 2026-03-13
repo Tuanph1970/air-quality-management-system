@@ -8,15 +8,6 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { sensorApi } from '../services/sensorApi';
 import { formatTimeAgo } from '../utils/format';
 
-const MOCK_SENSORS = [
-  { id: '1', name: 'Station A-01', type: 'PM2.5', status: 'active', factory_name: 'Steel Plant Alpha', last_reading: { value: 12.8, timestamp: new Date().toISOString() }, battery_level: 92 },
-  { id: '2', name: 'Station A-02', type: 'Multi-Gas', status: 'active', factory_name: 'Steel Plant Alpha', last_reading: { value: 0.035, timestamp: new Date(Date.now() - 300000).toISOString() }, battery_level: 78 },
-  { id: '3', name: 'Station B-01', type: 'PM10', status: 'warning', factory_name: 'Chemical Works Beta', last_reading: { value: 88.5, timestamp: new Date(Date.now() - 600000).toISOString() }, battery_level: 25 },
-  { id: '4', name: 'Station C-01', type: 'SO2', status: 'active', factory_name: 'Cement Factory Gamma', last_reading: { value: 0.12, timestamp: new Date(Date.now() - 120000).toISOString() }, battery_level: 95 },
-  { id: '5', name: 'Station D-01', type: 'NO2', status: 'offline', factory_name: 'Textile Mill Delta', last_reading: { value: null, timestamp: null }, battery_level: 0 },
-  { id: '6', name: 'Station E-01', type: 'CO', status: 'active', factory_name: 'Power Plant Epsilon', last_reading: { value: 1.2, timestamp: new Date(Date.now() - 180000).toISOString() }, battery_level: 67 },
-];
-
 function BatteryIndicator({ level }) {
   const color = level > 50 ? 'text-aqi-good' : level > 20 ? 'text-aqi-unhealthy-sensitive' : 'text-aqi-unhealthy';
   const Icon = level > 50 ? Signal : level > 20 ? SignalLow : SignalZero;
@@ -36,6 +27,7 @@ BatteryIndicator.propTypes = {
 function SensorsPage() {
   const [sensors, setSensors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -44,20 +36,45 @@ function SensorsPage() {
 
   async function loadSensors() {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await sensorApi.list();
-      setSensors(response.data?.data || MOCK_SENSORS);
-    } catch (_err) {
-      setSensors(MOCK_SENSORS);
+      // Handle different response formats
+      const data = response.data;
+      if (data?.items) {
+        // sensor-service returns { items: [], total: number }
+        setSensors(data.items);
+      } else if (data?.data) {
+        setSensors(data.data);
+      } else if (Array.isArray(data)) {
+        setSensors(data);
+      } else {
+        setSensors([]);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || err.message || 'Failed to load sensors');
+      setSensors([]);
     } finally {
       setIsLoading(false);
     }
   }
 
   const filtered = sensors.filter((s) =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.factory_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.model?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Map sensor-service format to frontend display format
+  const displaySensors = filtered.map((sensor) => ({
+    id: sensor.id,
+    name: sensor.serial_number || sensor.model || 'Unknown Sensor',
+    type: sensor.sensor_type,
+    status: sensor.status?.toLowerCase() || 'offline',
+    factory_name: sensor.factory_id ? `Factory ${sensor.factory_id.toString().slice(0, 8)}...` : 'N/A',
+    last_reading: { value: '--', timestamp: null },
+    battery_level: 100, // PurpleAir devices are powered, not battery
+  }));
 
   return (
     <div className="min-h-screen">
@@ -85,6 +102,12 @@ function SensorsPage() {
         {/* Sensor Table */}
         {isLoading ? (
           <LoadingSpinner className="py-20" size="lg" />
+        ) : error ? (
+          <EmptyState
+            icon={Radio}
+            title="Error loading sensors"
+            description={error}
+          />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Radio}
@@ -106,7 +129,7 @@ function SensorsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((sensor) => (
+                {displaySensors.map((sensor) => (
                   <tr key={sensor.id} className="cursor-pointer">
                     <td>
                       <div className="flex items-center gap-2.5">

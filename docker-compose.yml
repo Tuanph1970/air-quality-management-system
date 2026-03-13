@@ -474,6 +474,36 @@ services:
       - aqms-network
 
   # ===========================================================================
+  # PURPLEAIR LISTENER - Event listener for PurpleAir data synchronization
+  # ===========================================================================
+  purpleair-listener:
+    build:
+      context: ./services/purpleair-listener
+      dockerfile: Dockerfile
+    container_name: aqms-purpleair-listener
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=purpleair-listener
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - SENSOR_SERVICE_URL=http://sensor-service:8002
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./services/purpleair-listener/src:/app/src
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      sensor-service:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # STATION INGESTION SERVICE - External station API data ingestion
   # ===========================================================================
   station-ingestion-service:

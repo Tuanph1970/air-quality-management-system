@@ -1,30 +1,32 @@
 """PurpleAir event definitions."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID, uuid4
+from typing import Optional
 
 
 @dataclass
 class PurpleAirDataIngested:
     """Event emitted when PurpleAir data is ingested."""
-    
-    event_id: UUID
-    sensor_id: UUID
-    purpleair_sensor_id: int
-    readings: dict
-    timestamp: datetime
-    latitude: float
-    longitude: float
+
+    event_id: Optional[UUID] = None
+    sensor_id: Optional[UUID] = None
+    purpleair_sensor_id: int = 0
+    readings: dict = field(default_factory=dict)
+    timestamp: Optional[datetime] = None
+    latitude: float = 0.0
+    longitude: float = 0.0
     event_type: str = "purpleair.data.ingested"
-    
+    occurred_at: Optional[datetime] = field(default=None)
+
     def __post_init__(self):
         if self.event_id is None:
             self.event_id = uuid4()
         if self.occurred_at is None:
             self.occurred_at = datetime.utcnow()
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
@@ -36,21 +38,28 @@ class PurpleAirDataIngested:
             "latitude": self.latitude,
             "longitude": self.longitude,
             "event_type": self.event_type,
-            "occurred_at": datetime.utcnow().isoformat(),
+            "occurred_at": self.occurred_at.isoformat() if self.occurred_at else datetime.utcnow().isoformat(),
         }
 
 
 @dataclass
 class PurpleAirSensorRegistered:
     """Event emitted when PurpleAir sensor is registered."""
-    
-    event_id: UUID
-    sensor_id: UUID
-    purpleair_sensor_id: int
-    latitude: float
-    longitude: float
+
+    event_id: Optional[UUID] = None
+    sensor_id: Optional[UUID] = None
+    purpleair_sensor_id: int = 0
+    latitude: float = 0.0
+    longitude: float = 0.0
     event_type: str = "purpleair.sensor.registered"
-    
+    occurred_at: Optional[datetime] = field(default=None)
+
+    def __post_init__(self):
+        if self.event_id is None:
+            self.event_id = uuid4()
+        if self.occurred_at is None:
+            self.occurred_at = datetime.utcnow()
+
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
@@ -60,5 +69,5 @@ class PurpleAirSensorRegistered:
             "latitude": self.latitude,
             "longitude": self.longitude,
             "event_type": self.event_type,
-            "occurred_at": datetime.utcnow().isoformat(),
+            "occurred_at": self.occurred_at.isoformat() if self.occurred_at else datetime.utcnow().isoformat(),
         }

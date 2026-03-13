@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from src.core.config import settings
 from src.core.publisher import get_publisher
 from src.api.routes import router as purpleair_router
+from src.services.polling_service import get_polling_service
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     # Startup
     logger.info(f"Starting {settings.SERVICE_NAME}...")
-    
+
     # Connect to RabbitMQ
     try:
         publisher = get_publisher()
@@ -34,18 +35,39 @@ async def lifespan(app: FastAPI):
         logger.info("RabbitMQ publisher connected")
     except Exception as e:
         logger.warning(f"RabbitMQ connection failed: {e}")
-    
+
+    # Start polling service if sensors are configured
+    polling_service = None
+    if settings.PURPLEAIR_SENSORS:
+        try:
+            polling_service = get_polling_service()
+            await polling_service.start()
+            logger.info(
+                f"Polling service started with {len(settings.PURPLEAIR_SENSORS)} sensors "
+                f"(interval={settings.PURPLEAIR_POLLING_INTERVAL_HOURS}h)"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to start polling service: {e}")
+
     yield
-    
+
     # Shutdown
     logger.info(f"Shutting down {settings.SERVICE_NAME}...")
-    
+
+    # Stop polling service
+    if polling_service:
+        try:
+            await polling_service.stop()
+            logger.info("Polling service stopped")
+        except Exception as e:
+            logger.warning(f"Error stopping polling service: {e}")
+
     try:
         publisher = get_publisher()
         await publisher.close()
     except Exception:
         pass
-    
+
     logger.info("Shutdown complete")
 
 
