@@ -254,10 +254,10 @@ class UserApplicationService:
             If user doesn't exist
         """
         if not self.jwt_handler:
-            raise InvalidCredentialsError()
-
-        # Decode token
-        payload = self.jwt_handler.decode_token(token)
+            from shared.auth.jwt_handler import decode_token
+            payload = decode_token(token)
+        else:
+            payload = self.jwt_handler.decode_token(token)
         user_id = payload.get("sub")
 
         if not user_id:

@@ -3,6 +3,7 @@ import { airQualityApi } from '../services/airQualityApi';
 import { sensorApi } from '../services/sensorApi';
 import { alertApi } from '../services/alertApi';
 import { factoryApi } from '../services/factoryApi';
+import useLocationStore from './locationStore';
 
 const useDashboardStore = create((set) => ({
   currentAqi: null,
@@ -15,8 +16,9 @@ const useDashboardStore = create((set) => ({
   fetchDashboardData: async () => {
     set({ isLoading: true, error: null });
     try {
+      const { latitude, longitude } = useLocationStore.getState();
       const [aqiRes, violationsRes, factoriesRes] = await Promise.allSettled([
-        airQualityApi.getCurrentAqi(),
+        airQualityApi.getCurrentAqi({ latitude, longitude }),
         alertApi.getViolations({ status: 'active', limit: 5 }),
         factoryApi.list({ limit: 10 }),
       ]);

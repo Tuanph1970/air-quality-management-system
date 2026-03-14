@@ -49,7 +49,7 @@ async def proxy_factory_request(
             await client.connect()
 
         # Build request
-        url = f"/api/v1/factories/{path}" if path else "/api/v1/factories"
+        url = f"/factories/{path}" if path else "/factories"
 
         # Forward headers (excluding hop-by-hop headers)
         forward_headers = {}

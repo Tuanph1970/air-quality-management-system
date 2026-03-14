@@ -40,7 +40,7 @@ async def proxy_sensor_request(request: Request, path: str = "") -> JSONResponse
         if client._client is None:
             await client.connect()
 
-        url = f"/api/v1/sensors/{path}" if path else "/api/v1/sensors"
+        url = f"/sensors/{path}" if path else "/sensors"
 
         body = None
         if request.method in ("POST", "PUT", "PATCH"):

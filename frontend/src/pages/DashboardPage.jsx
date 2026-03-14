@@ -184,7 +184,7 @@ function DashboardPage() {
         {/* Charts and violations */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* AQI Trend Chart */}
-          <div className="lg:col-span-2 card">
+          <div className="lg:col-span-2 card min-w-0">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-display font-semibold text-[var(--color-text-primary)]">

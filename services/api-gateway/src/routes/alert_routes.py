@@ -30,7 +30,9 @@ def get_alert_client() -> ServiceClient:
     return _alert_client
 
 
+@router.api_route("/alerts", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 @router.api_route("/alerts/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@router.api_route("/violations", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 @router.api_route("/violations/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def proxy_alert_request(request: Request, path: str = "") -> JSONResponse:
     """Proxy all alert service requests."""

@@ -163,6 +163,7 @@ services:
       - SERVICE_PORT=8001
       - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/factory_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/factory-service/src:/app/src
@@ -200,6 +201,7 @@ services:
       - SERVICE_PORT=8002
       - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/sensor_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/sensor-service/src:/app/src
@@ -237,6 +239,7 @@ services:
       - SERVICE_PORT=8003
       - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/alert_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/alert-service/src:/app/src
@@ -275,6 +278,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     volumes:
       - ./services/air-quality-service/src:/app/src
@@ -353,6 +357,7 @@ services:
       - SERVICE_PORT=8006
       - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/remote_sensing_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - SENSOR_SERVICE_URL=http://sensor-service:8002
       - COPERNICUS_ADS_API_KEY=${COPERNICUS_ADS_API_KEY:-}
       - NASA_EARTHDATA_TOKEN=${NASA_EARTHDATA_TOKEN:-}

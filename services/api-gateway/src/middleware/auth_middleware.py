@@ -173,7 +173,7 @@ class AuthMiddleware:
                 token,
                 settings.JWT_SECRET,
                 algorithms=[settings.JWT_ALGORITHM],
-                audience=settings.JWT_AUDIENCE,
+                options={"verify_aud": False},
             )
             return payload
         except jwt.ExpiredSignatureError:
@@ -250,7 +250,7 @@ async def get_current_user(
             credentials.credentials,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
-            audience=settings.JWT_AUDIENCE,
+            options={"verify_aud": False},
         )
         return {
             "user_id": payload.get("sub"),

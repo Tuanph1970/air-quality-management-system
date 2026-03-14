@@ -53,11 +53,17 @@ async def proxy_auth_request(request: Request, path: str = "") -> JSONResponse:
                 except Exception:
                     json_body = None
 
+        forward_headers = {}
+        auth_header = request.headers.get("authorization")
+        if auth_header:
+            forward_headers["authorization"] = auth_header
+
         response = await client.request(
             method=request.method,
             path=url,
             params=dict(request.query_params),
             json=json_body,
+            headers=forward_headers,
         )
 
         return JSONResponse(

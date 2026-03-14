@@ -42,9 +42,9 @@ router = APIRouter(prefix="/api/v1", tags=["alerts"])
 # =============================================================================
 
 
-def get_service() -> AlertApplicationService:
+async def get_service() -> AlertApplicationService:
     """Inject the alert application service."""
-    return next(get_alert_application_service())
+    return await get_alert_application_service().__anext__()
 
 
 # =============================================================================

@@ -41,7 +41,12 @@ async def proxy_aq_request(request: Request, path: str = "") -> Response:
             await client.connect()
 
         # Reconstruct path
-        if path:
+        # current/forecast/map/history/heatmap/categories are served under /api/v1/aqi/ on the service
+        _aqi_paths = {"current", "forecast", "map", "history", "categories"}
+        top = path.split("/")[0] if path else ""
+        if top in _aqi_paths or top == "heatmap":
+            url = f"/api/v1/aqi/{path}"
+        elif path:
             url = f"/api/v1/air-quality/{path}"
         else:
             url = "/api/v1/air-quality"

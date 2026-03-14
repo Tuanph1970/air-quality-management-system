@@ -50,14 +50,14 @@ router = APIRouter(prefix="/api/v1", tags=["air-quality"])
 # =============================================================================
 
 
-def get_service() -> AirQualityApplicationService:
+async def get_service() -> AirQualityApplicationService:
     """Inject the air quality application service."""
-    return next(get_air_quality_service())
+    return await get_air_quality_service().__anext__()
 
 
-def get_sensor_client() -> SensorServiceClient:
+async def get_sensor_client() -> SensorServiceClient:
     """Inject the sensor service client."""
-    return next(get_sensor_service_client())
+    return await get_sensor_service_client().__anext__()
 
 
 # =============================================================================
