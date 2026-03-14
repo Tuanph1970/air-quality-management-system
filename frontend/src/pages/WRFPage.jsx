@@ -61,7 +61,7 @@ export default function WRFPage() {
               <Button
                 variant="primary"
                 onClick={() => setView('create')}
-                icon={<Plus className="w-5 h-5" />}
+                icon={Plus}
               >
                 New Simulation
               </Button>

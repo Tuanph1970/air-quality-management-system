@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Cloud, Play, Pause, Trash2, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
+import Card from '../common/Card';
 import ProgressBar from '../common/ProgressBar';
 import { wrfApi } from '../../services/wrfApi';
 
@@ -191,7 +192,7 @@ export default function WRFSimulationList({ onSimulationSelect, onRefresh }) {
                   size="sm"
                   variant="primary"
                   onClick={() => handleStart(sim.id)}
-                  icon={<Play className="w-4 h-4" />}
+                  icon={Play}
                 >
                   Start
                 </Button>
@@ -201,7 +202,7 @@ export default function WRFSimulationList({ onSimulationSelect, onRefresh }) {
                   size="sm"
                   variant="secondary"
                   onClick={() => handleCancel(sim.id)}
-                  icon={<Pause className="w-4 h-4" />}
+                  icon={Pause}
                 >
                   Cancel
                 </Button>
@@ -211,7 +212,7 @@ export default function WRFSimulationList({ onSimulationSelect, onRefresh }) {
                   size="sm"
                   variant="secondary"
                   onClick={() => onSimulationSelect?.(sim)}
-                  icon={<FileText className="w-4 h-4" />}
+                  icon={FileText}
                 >
                   View
                 </Button>
@@ -220,7 +221,7 @@ export default function WRFSimulationList({ onSimulationSelect, onRefresh }) {
                 size="sm"
                 variant="danger"
                 onClick={() => handleDelete(sim.id)}
-                icon={<Trash2 className="w-4 h-4" />}
+                icon={Trash2}
               >
                 Delete
               </Button>

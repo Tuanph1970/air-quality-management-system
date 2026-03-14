@@ -95,7 +95,7 @@ export default function WRFSimulationDetail({ simulation, onBack }) {
           </div>
         </div>
         {detail.status === 'completed' && (
-          <Button variant="primary" icon={<Download className="w-4 h-4" />}>
+          <Button variant="primary" icon={Download}>
             Export Data
           </Button>
         )}
