@@ -340,6 +340,8 @@ StationDetailPanel.propTypes = {
 function StationsPage() {
   const [stations, setStations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState(null); // { success, message }
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStation, setSelectedStation] = useState(null);
   const [timeRange, setTimeRange] = useState({
@@ -365,12 +367,23 @@ function StationsPage() {
   }
 
   async function handleSync() {
+    setIsSyncing(true);
+    setSyncResult(null);
     try {
-      await stationIngestionApi.syncStations();
-      await stationIngestionApi.syncAqiData(24);
+      const [stationsRes, aqiRes] = await Promise.all([
+        stationIngestionApi.syncStations(),
+        stationIngestionApi.syncAqiData(24),
+      ]);
+      const newStations = stationsRes.data?.new_stations ?? 0;
+      const readingsSynced = aqiRes.data?.readings_synced ?? 0;
+      setSyncResult({ success: true, message: `Synced ${newStations} new stations, ${readingsSynced} readings` });
       await loadStations();
     } catch (error) {
       console.error('Sync failed:', error);
+      setSyncResult({ success: false, message: error?.response?.data?.detail || error.message || 'Sync failed' });
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncResult(null), 5000);
     }
   }
 
@@ -396,6 +409,18 @@ function StationsPage() {
       />
 
       <div className="p-6 space-y-5">
+        {/* Sync result banner */}
+        {syncResult && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+            syncResult.success
+              ? 'bg-green-500/15 text-green-400 border border-green-500/20'
+              : 'bg-red-500/15 text-red-400 border border-red-500/20'
+          }`}>
+            <span>{syncResult.success ? '✓' : '✗'}</span>
+            <span>{syncResult.message}</span>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -408,12 +433,13 @@ function StationsPage() {
               className="input pl-9"
             />
           </div>
-          <button 
+          <button
             onClick={handleSync}
-            className="btn-primary flex items-center gap-2"
+            disabled={isSyncing}
+            className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Sync Data</span>
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Syncing…' : 'Sync Data'}</span>
           </button>
         </div>
 
@@ -452,9 +478,9 @@ function StationsPage() {
             title="No stations found"
             description="Sync data from the external API to load stations"
             action={
-              <button onClick={handleSync} className="btn-primary">
-                <RefreshCw className="w-4 h-4" />
-                Sync Stations
+              <button onClick={handleSync} disabled={isSyncing} className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing…' : 'Sync Stations'}
               </button>
             }
           />

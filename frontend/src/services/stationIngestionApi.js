@@ -26,7 +26,7 @@ export const stationIngestionApi = {
   
   // Trigger manual sync
   syncStations: () => stationApi.post('/sync/stations'),
-  syncAqiData: (hours = 24) => stationApi.post('/sync/aqi', { params: { hours } }),
+  syncAqiData: (hours = 24) => stationApi.post('/sync/aqi', null, { params: { hours } }),
   
   // Health check
   health: () => stationApi.get('/health'),

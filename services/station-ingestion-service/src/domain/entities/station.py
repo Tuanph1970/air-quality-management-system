@@ -136,12 +136,15 @@ class AirQualityReading:
         except (ValueError, AttributeError):
             reading_time = datetime.utcnow()
 
+        # API uses "PM205" or "PM2.5" for PM2.5 field
+        pm25_value = data.get("PM2.5") or data.get("PM205")
+
         return cls(
             id=str(uuid.uuid4()),
             station_code=station_code,
             reading_time=reading_time,
             aqi=data.get("aqi"),
-            pm25=data.get("PM2.5"),
+            pm25=pm25_value,
             pm10=data.get("PM10"),
             co=data.get("CO"),
             so2=data.get("SO2"),

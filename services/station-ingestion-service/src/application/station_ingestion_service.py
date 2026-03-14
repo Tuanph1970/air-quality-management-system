@@ -38,7 +38,7 @@ class StationIngestionService:
         """Synchronize stations from external API.
 
         Returns:
-            Tuple of (total stations, new stations count)
+            Tuple of (total stations saved, new stations count)
         """
         logger.info("Starting station synchronization...")
 
@@ -47,29 +47,100 @@ class StationIngestionService:
             logger.info("USE_FAKE_DATA is enabled. Using fake station data...")
             from src.infrastructure.external.fake_data_seeder import create_fake_stations
             stations = create_fake_stations()
+            # Count how many are truly new
+            new_count = 0
+            for station in stations:
+                existing = await self.repository.get_station_by_code(station.station_code)
+                if not existing:
+                    new_count += 1
             saved_stations = await self.repository.save_stations(stations)
-            logger.info(f"Saved {len(saved_stations)} fake stations")
-            return len(saved_stations), len(saved_stations)
+            logger.info(f"Saved {len(saved_stations)} fake stations ({new_count} new)")
+            return len(saved_stations), new_count
 
         # Fetch all stations from external API
         response = await self.api_client.get_automation_stations(page=0, size=1000)
 
         if not response:
-            logger.error("Failed to fetch stations from external API")
-            return 0, 0
+            # Stations endpoint failed — fall back to extracting stations from AQI data
+            logger.warning("Stations endpoint unavailable — extracting stations from recent AQI data")
+            return await self._sync_stations_from_aqi()
 
         content = response.get("content", [])
         total_elements = response.get("totalElements", len(content))
 
-        logger.info(f"Fetched {len(content)} stations (total: {total_elements})")
+        logger.info(f"Fetched {len(content)} stations from API (total reported: {total_elements})")
+
+        if not content:
+            return await self._sync_stations_from_aqi()
+
+        # Count new vs existing before saving
+        new_count = 0
+        for item in content:
+            code = item.get("stationCode", "")
+            if code:
+                existing = await self.repository.get_station_by_code(code)
+                if not existing:
+                    new_count += 1
 
         # Convert to entities and save
-        stations = [Station.from_api_data(data) for data in content]
+        stations = [Station.from_api_data(data) for data in content if data.get("stationCode")]
         saved_stations = await self.repository.save_stations(stations)
 
-        logger.info(f"Saved {len(saved_stations)} stations")
+        logger.info(f"Saved {len(saved_stations)} stations ({new_count} new)")
+        return len(saved_stations), new_count
 
-        return len(saved_stations), 0
+    async def _sync_stations_from_aqi(self) -> Tuple[int, int]:
+        """Extract and save station metadata from recent AQI data as fallback.
+
+        Fetches the last hour of AQI data and extracts unique stationCode/stationName
+        pairs to populate the stations table.
+
+        Returns:
+            Tuple of (total stations saved, new stations count)
+        """
+        from datetime import timedelta
+        to_time = datetime.utcnow()
+        from_time = to_time - timedelta(hours=1)
+
+        logger.info("Fetching AQI data to extract station list...")
+        response = await self.api_client.get_aqi_hours(from_time=from_time, to_time=to_time, size=500)
+        if not response:
+            logger.error("Failed to fetch AQI data for station extraction")
+            return 0, 0
+
+        content = response.get("content", [])
+        if not content:
+            logger.warning("No AQI content returned for station extraction")
+            return 0, 0
+
+        seen: dict = {}
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            code = item.get("stationCode")
+            name = item.get("stationName", code or "")
+            if code and code not in seen:
+                seen[code] = name
+
+        logger.info(f"Discovered {len(seen)} stations from AQI data")
+
+        new_count = 0
+        stations_to_save = []
+        import uuid as _uuid
+        for code, name in seen.items():
+            existing = await self.repository.get_station_by_code(code)
+            if not existing:
+                new_count += 1
+            stations_to_save.append(Station(
+                id=str(_uuid.uuid4()),
+                station_code=code,
+                station_name=name,
+                is_active=True,
+            ))
+
+        saved = await self.repository.save_stations(stations_to_save)
+        logger.info(f"Saved {len(saved)} stations from AQI fallback ({new_count} new)")
+        return len(saved), new_count
 
     async def sync_aqi_data(
         self,
@@ -135,41 +206,64 @@ class StationIngestionService:
                 logger.info("No AQI data found")
                 return 0
 
-            # Step 3: Parse readings from response
-            # Response format: content is a list of objects with structure:
-            # { "stationCode": "...", "stationName": "...", "data": [ {...readings...} ] }
+            # Step 3: Parse readings from response.
+            # API response format — content is a list of objects:
+            # [
+            #   {
+            #     "stationCode": "GLHN_KHINVC",
+            #     "stationName": "...",
+            #     "data": [
+            #       { "id": "...", "getTime": "2026-03-14T02:00:00",
+            #         "data": { "aqi": 103.95, "PM205": 103.95, "PM10": 70.89, "NO2": 14.1, ... }
+            #       }
+            #     ]
+            #   }
+            # ]
             readings = []
+            stations_from_aqi: List[Station] = []
 
             for item in content:
                 if not isinstance(item, dict):
                     continue
 
-                # Get station code from the item
                 station_code = item.get("stationCode")
+                station_name = item.get("stationName", "")
                 station_readings = item.get("data", [])
 
-                # Skip if no station code or readings
                 if not station_code or not isinstance(station_code, str):
-                    logger.warning(f"Skipping item without stationCode: {item.keys() if isinstance(item, dict) else 'not a dict'}")
+                    logger.warning(f"Skipping item without valid stationCode")
                     continue
 
+                # Collect station info from AQI response to auto-register unknown stations
+                if station_code not in valid_codes:
+                    import uuid as _uuid
+                    stations_from_aqi.append(Station(
+                        id=str(_uuid.uuid4()),
+                        station_code=station_code,
+                        station_name=station_name,
+                        is_active=True,
+                    ))
+
                 if not isinstance(station_readings, list):
-                    logger.warning(f"Skipping station {station_code} with non-list data")
+                    logger.warning(f"Skipping station {station_code}: expected list")
                     continue
 
                 for reading_data in station_readings:
                     if not isinstance(reading_data, dict):
                         continue
                     try:
-                        reading = AirQualityReading.from_api_data(
-                            station_code, reading_data
-                        )
+                        reading = AirQualityReading.from_api_data(station_code, reading_data)
                         readings.append(reading)
                     except Exception as e:
                         logger.warning(f"Failed to parse reading for station {station_code}: {e}")
 
+            # Auto-register any stations found in AQI data but not yet in DB
+            if stations_from_aqi:
+                logger.info(f"Auto-registering {len(stations_from_aqi)} stations discovered from AQI response")
+                await self.repository.save_stations(stations_from_aqi)
+
             if not readings:
-                logger.warning("No valid readings to save - check API response format")
+                logger.warning("No valid readings parsed — check API response format")
                 logger.debug(f"Sample content item: {content[0] if content else 'empty'}")
                 return 0
 
@@ -184,10 +278,23 @@ class StationIngestionService:
     ) -> List[Dict[str, Any]]:
         """Get all stations with their latest reading.
 
+        If no stations exist in the database, automatically fetches them
+        from the external API first.
+
         Returns:
             List of station data with latest reading
         """
         stations = await self.repository.get_all_stations()
+
+        if not stations:
+            logger.info("No stations in database — fetching from external API...")
+            total, new = await self.sync_stations()
+            if total > 0:
+                logger.info(f"Auto-synced {total} stations ({new} new) on first load")
+                stations = await self.repository.get_all_stations()
+            else:
+                logger.warning("Could not fetch stations from external API")
+
         result = []
 
         for station in stations:

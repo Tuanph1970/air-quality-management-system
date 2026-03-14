@@ -531,6 +531,8 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./services/station-ingestion-service/src:/app/src
+    extra_hosts:
+      - "admin-qttd.tedp.vn:103.88.113.253"
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
       interval: 10s
