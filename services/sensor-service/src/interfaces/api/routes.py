@@ -55,10 +55,11 @@ async def lifespan(app: FastAPI):
     # ---- startup -------------------------------------------------------
     logger.info("Sensor service starting up ...")
 
-    # Database — create tables if they don't exist
+    # Database — retry loop so the service recovers on slow hardware
+    from shared.utils.startup import init_db_with_retry
+
     _engine = get_engine()
-    async with _engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await init_db_with_retry(_engine, Base.metadata)
     logger.info("Database tables verified")
 
     # RabbitMQ publisher

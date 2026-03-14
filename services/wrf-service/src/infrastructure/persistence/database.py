@@ -61,15 +61,14 @@ class DatabaseManager:
                 await session.close()
 
     async def create_tables(self) -> None:
-        """Create all tables in the database."""
+        """Create all tables in the database with retry for slow hardware."""
         if not self.engine:
             self.create_engine()
 
         from .models import Base
+        from shared.utils.startup import init_db_with_retry
 
-        async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
+        await init_db_with_retry(self.engine, Base.metadata)
         logger.info("Database tables created successfully")
 
 

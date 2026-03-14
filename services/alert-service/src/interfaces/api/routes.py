@@ -37,10 +37,11 @@ async def lifespan(app: FastAPI):
 
     # --- Startup ---
 
-    # 1. Create database tables (dev convenience; use Alembic in prod).
+    # 1. Create database tables — retry loop so the service recovers on slow hardware.
+    from shared.utils.startup import init_db_with_retry
+
     engine = get_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await init_db_with_retry(engine, Base.metadata)
     logger.info("Database tables ensured")
 
     # 2. Connect the RabbitMQ publisher.

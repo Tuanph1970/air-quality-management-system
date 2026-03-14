@@ -101,10 +101,11 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_database() -> None:
-    """Initialize database tables."""
+    """Initialize database tables with retry for slow hardware."""
+    from shared.utils.startup import init_db_with_retry
+
     engine = get_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await init_db_with_retry(engine, Base.metadata)
     logger.info("Database tables created")
 
 

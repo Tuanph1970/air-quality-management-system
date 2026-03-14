@@ -29,8 +29,8 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 10
+      start_period: 40s
     restart: unless-stopped
     logging:
       driver: json-file
@@ -59,8 +59,8 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Mysql_2026}"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 15
+      start_period: 60s
     restart: unless-stopped
     logging:
       driver: json-file
@@ -122,8 +122,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 15
+      start_period: 60s
     depends_on:
       factory-service:
         condition: service_healthy
@@ -172,8 +172,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -210,8 +210,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -248,8 +248,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 8
-      start_period: 90s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -287,8 +287,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       redis:
         condition: service_healthy
@@ -325,8 +325,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8005/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -376,8 +376,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8006/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -421,8 +421,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8007/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy
@@ -464,8 +464,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 15
+      start_period: 60s
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -537,8 +537,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 15
+      start_period: 60s
     depends_on:
       mysql:
         condition: service_healthy
@@ -584,8 +584,8 @@ services:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8009/health')\""]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 60s
+      retries: 15
+      start_period: 120s
     depends_on:
       mysql:
         condition: service_healthy

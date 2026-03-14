@@ -29,9 +29,10 @@ async def lifespan(app: FastAPI):
     from ...infrastructure.persistence.database import Base, get_engine
     from ...infrastructure.persistence import models as _models  # noqa: F401 – register all models
 
+    from shared.utils.startup import init_db_with_retry
+
     engine = get_engine()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    await init_db_with_retry(engine, Base.metadata)
     logger.info("Database tables ensured")
 
     logger.info("User Service started successfully")
