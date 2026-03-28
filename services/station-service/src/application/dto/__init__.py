@@ -114,8 +114,89 @@ class StationReadingsDTO:
 @dataclass
 class StationReadingsListDTO:
     """DTO for paginated list of readings."""
-    
+
     items: List[PollutantReadingDTO]
     total: int
     skip: int
     limit: int
+
+
+@dataclass
+class RawDataDTO:
+    """DTO for a single raw station data record."""
+
+    id: UUID
+    station_id: UUID
+    measured_at: datetime
+    # Pollutants
+    no_value: Optional[float] = None
+    o3_value: Optional[float] = None
+    co_value: Optional[float] = None
+    no2_value: Optional[float] = None
+    nox_value: Optional[float] = None
+    so2_value: Optional[float] = None
+    pm10_value: Optional[float] = None
+    pm25_value: Optional[float] = None
+    # Environmental
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    # Wind
+    wind_speed: Optional[float] = None
+    wind_direction: Optional[float] = None
+    # Additional
+    aqi: Optional[float] = None
+    aqi_category: Optional[str] = None
+    # Metadata
+    source: str = "ENVISOFT_API"
+    fetched_at: Optional[datetime] = None
+
+    @classmethod
+    def from_model(cls, model) -> "RawDataDTO":
+        """Create DTO from RawStationDataModel."""
+        return cls(
+            id=UUID(model.id),
+            station_id=UUID(model.station_id),
+            measured_at=model.measured_at,
+            no_value=model.no_value,
+            o3_value=model.o3_value,
+            co_value=model.co_value,
+            no2_value=model.no2_value,
+            nox_value=model.nox_value,
+            so2_value=model.so2_value,
+            pm10_value=model.pm10_value,
+            pm25_value=model.pm25_value,
+            temperature=model.temperature,
+            humidity=model.humidity,
+            pressure=model.pressure,
+            wind_speed=model.wind_speed,
+            wind_direction=model.wind_direction,
+            aqi=model.aqi,
+            aqi_category=model.aqi_category,
+            source=model.source,
+            fetched_at=model.fetched_at,
+        )
+
+
+@dataclass
+class RawDataListDTO:
+    """DTO for paginated list of raw data records."""
+
+    items: List[RawDataDTO]
+    total: int
+    skip: int
+    limit: int
+
+
+@dataclass
+class FetchRawDataResultDTO:
+    """DTO for the result of a raw data fetch operation."""
+
+    station_id: UUID
+    records_fetched: int
+    records_saved: int
+    from_date: str
+    to_date: str
+    success: bool
+    message: str
+    error: Optional[str] = None

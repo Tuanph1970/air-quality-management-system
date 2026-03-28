@@ -55,6 +55,17 @@ class GetStationReadingsQuery:
 @dataclass
 class GetLatestStationReadingsQuery:
     """Query to get latest readings for a station."""
-    
+
     station_id: UUID
     pollutant_types: Optional[list] = None
+
+
+@dataclass
+class GetRawDataQuery:
+    """Query to get raw 5-minute data for a station."""
+
+    station_id: UUID
+    start_time: Optional[str] = None  # ISO 8601 format
+    end_time: Optional[str] = None  # ISO 8601 format
+    skip: int = 0
+    limit: int = 1000

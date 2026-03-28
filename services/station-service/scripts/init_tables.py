@@ -20,7 +20,7 @@ from src.infrastructure.persistence.database import (
     get_engine,
     init_database,
 )
-from src.infrastructure.persistence.models import StationModel, PollutantReadingModel
+from src.infrastructure.persistence.models import StationModel, PollutantReadingModel, RawStationDataModel
 
 logging.basicConfig(
     level=logging.INFO,

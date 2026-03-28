@@ -15,6 +15,7 @@ import {
   Activity,
   Cloud,
   MapPin,
+  Zap,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { path: '/alerts', label: 'Alerts', icon: AlertTriangle },
   { path: '/map', label: 'Map View', icon: Map },
   { path: '/stations', label: 'Monitoring Stations', icon: MapPin },
+  { path: '/raw-station-data', label: 'Raw Station Data', icon: Zap },
   { path: '/data-sources', label: 'Data Sources', icon: Cloud },
   { path: '/wrf', label: 'WRF Forecast', icon: Cloud },
   { path: '/reports', label: 'Reports', icon: FileText },

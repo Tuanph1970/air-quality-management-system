@@ -87,5 +87,20 @@ class RecordStationReadingsCommand:
 @dataclass
 class DeleteStationCommand:
     """Command to delete a station."""
-    
+
     station_id: UUID
+
+
+@dataclass
+class FetchRawDataCommand:
+    """Command to fetch raw 5-minute data from EnviSoft API.
+
+    This command triggers a fetch of raw minute-level data from EnviSoft
+    and stores it in the raw_station_data table.
+    """
+
+    station_id: UUID
+    from_date: str  # YYYY-MM-DD format
+    to_date: str  # YYYY-MM-DD format
+    time_type: str = "5 phút"
+    auth_credentials: Optional[Dict[str, Any]] = None

@@ -6,6 +6,7 @@ from typing import Dict, Type
 
 from .base_adapter import BaseStationAdapter
 from .generic_adapter import GenericStationAdapter
+from .envisoft_adapter import EnviSoftAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class AdapterFactory:
         """Initialize adapter factory with built-in adapters."""
         self._adapters: Dict[str, Type[BaseStationAdapter]] = {
             "generic": GenericStationAdapter,
+            "envisoft": EnviSoftAdapter,
         }
     
     def register_adapter(

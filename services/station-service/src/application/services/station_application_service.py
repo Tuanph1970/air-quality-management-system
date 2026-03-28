@@ -15,6 +15,7 @@ from ..commands import (
     IngestStationDataCommand,
     RecordStationReadingsCommand,
     DeleteStationCommand,
+    FetchRawDataCommand,
 )
 from ..queries import (
     GetStationQuery,
@@ -23,6 +24,7 @@ from ..queries import (
     GetNearbyStationsQuery,
     GetStationReadingsQuery,
     GetLatestStationReadingsQuery,
+    GetRawDataQuery,
 )
 from ..dto import (
     StationDTO,
@@ -30,6 +32,9 @@ from ..dto import (
     PollutantReadingDTO,
     StationReadingsDTO,
     StationReadingsListDTO,
+    RawDataDTO,
+    RawDataListDTO,
+    FetchRawDataResultDTO,
 )
 from ...domain.entities.station import Station
 from ...domain.repositories import StationRepository, ReadingRepository
@@ -484,4 +489,176 @@ class StationApplicationService:
             timestamp=latest_ts or datetime.now(timezone.utc),
             readings=readings_values,
             source="API",
+        )
+
+    # ==================================================================
+    # Raw Data Operations
+    # ==================================================================
+
+    async def fetch_raw_data(self, command: FetchRawDataCommand) -> FetchRawDataResultDTO:
+        """Fetch raw 5-minute data from EnviSoft API.
+
+        Args:
+            command: FetchRawDataCommand with station_id, date range, etc.
+
+        Returns:
+            FetchRawDataResultDTO with fetch results
+
+        Raises:
+            StationNotFoundError: If station not found
+        """
+        from ...infrastructure.persistence.raw_station_data_repository import (
+            RawStationDataRepository,
+        )
+        from ...infrastructure.external.station_api_client import StationAPIClient
+
+        station = await self.station_repository.get_by_id(command.station_id)
+        if not station:
+            raise StationNotFoundError(command.station_id)
+
+        # Get EnviSoft configuration from station metadata or api_config
+        api_config = station.api_config or {}
+        station_metadata = station.metadata or {}
+
+        # Build EnviSoft-specific config
+        envisoft_config = {
+            "endpoint": api_config.get(
+                "envisoft_endpoint",
+                "https://admin-qttd.tedp.vn/api/eos/data-average-by-time",
+            ),
+            "station_id": station_metadata.get("envisoft_station_id") or api_config.get(
+                "envisoft_station_id", station.station_code
+            ),
+            "from_date": command.from_date,
+            "to_date": command.to_date,
+            "time_type": command.time_type,
+            "adapter_type": "envisoft",
+            "auth_type": api_config.get("auth_type", "cookie"),
+            "auth_credentials": command.auth_credentials
+            or api_config.get("auth_credentials", {}),
+        }
+
+        logger.info(
+            f"Fetching raw data for station {station.station_code} "
+            f"from {command.from_date} to {command.to_date}"
+        )
+
+        # Fetch data using EnviSoft adapter
+        client = StationAPIClient()
+        result = await client.fetch_data(envisoft_config)
+
+        if not result.success:
+            logger.error(f"Failed to fetch raw data: {result.error}")
+            return FetchRawDataResultDTO(
+                station_id=command.station_id,
+                records_fetched=0,
+                records_saved=0,
+                from_date=command.from_date,
+                to_date=command.to_date,
+                success=False,
+                message="Failed to fetch data from EnviSoft API",
+                error=result.error,
+            )
+
+        # Get raw records from result
+        raw_records = result.raw_response or []
+        records_fetched = len(raw_records)
+
+        if not raw_records:
+            return FetchRawDataResultDTO(
+                station_id=command.station_id,
+                records_fetched=0,
+                records_saved=0,
+                from_date=command.from_date,
+                to_date=command.to_date,
+                success=True,
+                message="No data available for the specified date range",
+            )
+
+        # Save to database
+        from ...infrastructure.persistence.database import get_db_session
+
+        async with get_db_session() as session:
+            repo = RawStationDataRepository(session)
+            records_saved = await repo.save_batch(
+                station_id=str(station.id),
+                records=raw_records,
+                source="ENVISOFT_API",
+            )
+            await session.commit()
+
+        logger.info(
+            f"Raw data fetch complete: {records_fetched} fetched, "
+            f"{records_saved} saved for station {station.station_code}"
+        )
+
+        return FetchRawDataResultDTO(
+            station_id=command.station_id,
+            records_fetched=records_fetched,
+            records_saved=records_saved,
+            from_date=command.from_date,
+            to_date=command.to_date,
+            success=True,
+            message=f"Successfully fetched and saved {records_saved} records",
+        )
+
+    async def get_raw_data(self, query: GetRawDataQuery) -> RawDataListDTO:
+        """Get raw 5-minute data for a station.
+
+        Args:
+            query: GetRawDataQuery with station_id, time filters, etc.
+
+        Returns:
+            RawDataListDTO with raw data records
+
+        Raises:
+            StationNotFoundError: If station not found
+        """
+        from ...infrastructure.persistence.raw_station_data_repository import (
+            RawStationDataRepository,
+        )
+
+        station = await self.station_repository.get_by_id(query.station_id)
+        if not station:
+            raise StationNotFoundError(query.station_id)
+
+        # Parse timestamps
+        start_time = None
+        end_time = None
+
+        if query.start_time:
+            start_time = datetime.fromisoformat(
+                query.start_time.replace("Z", "+00:00")
+            )
+        if query.end_time:
+            end_time = datetime.fromisoformat(query.end_time.replace("Z", "+00:00"))
+
+        # Fetch from repository
+        from ...infrastructure.persistence.database import get_db_session
+
+        async with get_db_session() as session:
+            repo = RawStationDataRepository(session)
+
+            # Get records
+            records = await repo.get_by_station(
+                station_id=str(station.id),
+                start_time=start_time,
+                end_time=end_time,
+                skip=query.skip,
+                limit=query.limit,
+            )
+
+            # Get total count
+            total = await repo.count_by_station(
+                station_id=str(station.id),
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+        items = [RawDataDTO.from_model(r) for r in records]
+        return RawDataListDTO(
+            items=items,
+            total=total,
+            skip=query.skip,
+            limit=query.limit,
         )

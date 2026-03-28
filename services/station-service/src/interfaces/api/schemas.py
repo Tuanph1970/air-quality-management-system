@@ -279,6 +279,151 @@ class ErrorResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
-    
+
     status: str
     service: str
+
+
+# =============================================================================
+# Raw Data Schemas
+# =============================================================================
+
+
+class FetchRawDataRequest(BaseModel):
+    """Payload for fetching raw 5-minute data from EnviSoft."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "from_date": "2026-03-01",
+                "to_date": "2026-03-02",
+                "time_type": "5 phút",
+                "auth_credentials": {
+                    "cookies": {"JSESSIONID": "..."}
+                }
+            }
+        }
+    )
+
+    from_date: str = Field(
+        ...,
+        description="Start date (YYYY-MM-DD format)",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    )
+    to_date: str = Field(
+        ...,
+        description="End date (YYYY-MM-DD format)",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    )
+    time_type: str = Field(
+        "5 phút",
+        description="Time interval type (e.g., '5 phút', '1 giờ')",
+    )
+    auth_credentials: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Authentication credentials (cookies, tokens, etc.)",
+    )
+
+
+class FetchRawDataResultResponse(BaseModel):
+    """Response for raw data fetch operation."""
+
+    station_id: UUID
+    records_fetched: int
+    records_saved: int
+    from_date: str
+    to_date: str
+    success: bool
+    message: str
+    error: Optional[str] = None
+
+    @classmethod
+    def from_dto(cls, dto) -> "FetchRawDataResultResponse":
+        """Create from DTO."""
+        return cls(
+            station_id=dto.station_id,
+            records_fetched=dto.records_fetched,
+            records_saved=dto.records_saved,
+            from_date=dto.from_date,
+            to_date=dto.to_date,
+            success=dto.success,
+            message=dto.message,
+            error=dto.error,
+        )
+
+
+class RawDataResponse(BaseModel):
+    """Single raw station data record."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    station_id: UUID
+    measured_at: datetime
+    # Pollutants
+    no_value: Optional[float] = None
+    o3_value: Optional[float] = None
+    co_value: Optional[float] = None
+    no2_value: Optional[float] = None
+    nox_value: Optional[float] = None
+    so2_value: Optional[float] = None
+    pm10_value: Optional[float] = None
+    pm25_value: Optional[float] = None
+    # Environmental
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    # Wind
+    wind_speed: Optional[float] = None
+    wind_direction: Optional[float] = None
+    # Additional
+    aqi: Optional[float] = None
+    aqi_category: Optional[str] = None
+    # Metadata
+    source: str = "ENVISOFT_API"
+    fetched_at: Optional[datetime] = None
+
+    @classmethod
+    def from_dto(cls, dto) -> "RawDataResponse":
+        """Create from DTO."""
+        return cls(
+            id=dto.id,
+            station_id=dto.station_id,
+            measured_at=dto.measured_at,
+            no_value=dto.no_value,
+            o3_value=dto.o3_value,
+            co_value=dto.co_value,
+            no2_value=dto.no2_value,
+            nox_value=dto.nox_value,
+            so2_value=dto.so2_value,
+            pm10_value=dto.pm10_value,
+            pm25_value=dto.pm25_value,
+            temperature=dto.temperature,
+            humidity=dto.humidity,
+            pressure=dto.pressure,
+            wind_speed=dto.wind_speed,
+            wind_direction=dto.wind_direction,
+            aqi=dto.aqi,
+            aqi_category=dto.aqi_category,
+            source=dto.source,
+            fetched_at=dto.fetched_at,
+        )
+
+
+class RawDataListResponse(BaseModel):
+    """Paginated list of raw data records."""
+
+    items: List[RawDataResponse]
+    total: int
+    skip: int
+    limit: int
+
+    @classmethod
+    def from_dto(cls, dto) -> "RawDataListResponse":
+        """Create from DTO."""
+        return cls(
+            items=[RawDataResponse.from_dto(r) for r in dto.items],
+            total=dto.total,
+            skip=dto.skip,
+            limit=dto.limit,
+        )

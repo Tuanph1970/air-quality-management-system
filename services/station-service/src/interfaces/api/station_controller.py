@@ -18,6 +18,9 @@ from .schemas import (
     StationReadingsListResponse,
     PollutantReadingResponse,
     MessageResponse,
+    FetchRawDataRequest,
+    FetchRawDataResultResponse,
+    RawDataListResponse,
 )
 from ...application.commands import (
     CreateStationCommand,
@@ -27,6 +30,7 @@ from ...application.commands import (
     DeactivateStationCommand,
     RecordStationReadingsCommand,
     DeleteStationCommand,
+    FetchRawDataCommand,
 )
 from ...application.queries import (
     GetStationQuery,
@@ -35,6 +39,7 @@ from ...application.queries import (
     GetNearbyStationsQuery,
     GetStationReadingsQuery,
     GetLatestStationReadingsQuery,
+    GetRawDataQuery,
 )
 from ...application.services import StationApplicationService
 from ...domain.exceptions.station_exceptions import (
@@ -417,3 +422,80 @@ async def find_nearby_stations(
     
     dto = await service.get_nearby_stations(query)
     return StationListResponse.from_dto(dto)
+
+
+# =============================================================================
+# Raw Data Endpoints
+# =============================================================================
+
+@router.post(
+    "/{station_id}/fetch-raw-data",
+    response_model=FetchRawDataResultResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Fetch raw 5-minute data from EnviSoft",
+)
+async def fetch_raw_station_data(
+    station_id: UUID,
+    request: FetchRawDataRequest,
+    service: StationApplicationService = Depends(get_application_service),
+):
+    """Fetch raw 5-minute interval data from EnviSoft API.
+
+    This endpoint fetches minute-level pollutant and environmental data
+    from EnviSoft and stores it in the database.
+
+    - **from_date**: Start date (YYYY-MM-DD)
+    - **to_date**: End date (YYYY-MM-DD)
+    - **time_type**: Time interval (default: "5 phút")
+    - **auth_credentials**: Optional authentication cookies/tokens
+    """
+    command = FetchRawDataCommand(
+        station_id=station_id,
+        from_date=request.from_date,
+        to_date=request.to_date,
+        time_type=request.time_type,
+        auth_credentials=request.auth_credentials,
+    )
+
+    try:
+        dto = await service.fetch_raw_data(command)
+        return FetchRawDataResultResponse.from_dto(dto)
+    except StationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get(
+    "/{station_id}/raw-data",
+    response_model=RawDataListResponse,
+    summary="Get raw 5-minute station data",
+)
+async def get_raw_station_data(
+    station_id: UUID,
+    start_time: Optional[str] = Query(
+        None, description="Filter readings after this time (ISO 8601)"
+    ),
+    end_time: Optional[str] = Query(
+        None, description="Filter readings before this time (ISO 8601)"
+    ),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(1000, ge=1, le=5000),
+    service: StationApplicationService = Depends(get_application_service),
+):
+    """Get raw 5-minute data for a station.
+
+    Returns all raw data records including pollutant measurements,
+    environmental data, and wind information.
+    """
+    query = GetRawDataQuery(
+        station_id=station_id,
+        start_time=start_time,
+        end_time=end_time,
+        skip=skip,
+        limit=limit,
+    )
+
+    try:
+        dto = await service.get_raw_data(query)
+        return RawDataListResponse.from_dto(dto)
+    except StationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
