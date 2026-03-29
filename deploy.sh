@@ -36,7 +36,20 @@ if [ ! -f ".env" ] && [ -f ".env.example" ]; then
   cp .env.example .env
 fi
 
-# ── 3. Build images ────────────────────────────────────────────────────────────
+# ── 3. Build frontend locally (avoids npm registry network issues inside Docker) ──
+echo "[INFO]  Building frontend (npm install + vite build)..."
+(
+  cd "$PROJECT_ROOT/frontend"
+  if [ ! -d node_modules ]; then
+    echo "[INFO]  Installing frontend dependencies..."
+    npm install --no-audit --no-fund
+  fi
+  npm run build
+)
+echo "[INFO]  Frontend built successfully."
+echo ""
+
+# ── 4. Build Docker images ────────────────────────────────────────────────────
 BUILD_FLAGS=""
 if [ "$NO_CACHE" = "true" ]; then
   echo "[INFO]  Building with --no-cache"
@@ -46,13 +59,13 @@ fi
 echo "[INFO]  Building all Docker images..."
 docker compose -f "$COMPOSE_FILE" build $BUILD_FLAGS
 
-# ── 4. Start stack ─────────────────────────────────────────────────────────────
+# ── 5. Start stack ─────────────────────────────────────────────────────────────
 echo ""
 echo "[INFO]  Starting all services..."
 # Allow partial failures — individual health is checked below
 docker compose -f "$COMPOSE_FILE" up -d || true
 
-# ── 5. Wait for health checks ─────────────────────────────────────────────────
+# ── 6. Wait for health checks ─────────────────────────────────────────────────
 echo ""
 echo "[INFO]  Waiting for services to become healthy..."
 
@@ -118,7 +131,7 @@ check purpleair-ingestion-service 120
 check station-ingestion-service 120
 check api-gateway       120
 
-# ── 6. Summary ────────────────────────────────────────────────────────────────
+# ── 7. Summary ────────────────────────────────────────────────────────────────
 echo ""
 echo "========================================"
 echo "  Services"

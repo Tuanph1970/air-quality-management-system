@@ -21,7 +21,7 @@ import {
 import Header from '../components/layout/Header';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import stationServiceApi from '../services/stationServiceApi';
+import { stationServiceApi } from '../services/stationServiceApi';
 import { formatTimeAgo } from '../utils/format';
 
 // AQI color mapping
