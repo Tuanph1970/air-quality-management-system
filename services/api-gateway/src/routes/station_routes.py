@@ -1,94 +1,79 @@
 """Station service routes — proxy requests to station-service."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, HTTPException
+import logging
+
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 
-from ..utils.service_client import ServiceClient
 from ..config import settings
+from ..utils.service_client import ServiceClient
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/stations", tags=["stations"])
 
-
-@router.get("")
-async def list_stations(request: Request):
-    """List all air quality stations."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request)
+_station_client: ServiceClient | None = None
 
 
-@router.post("")
-async def create_station(request: Request):
-    """Create a new air quality station."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request)
+def get_station_client() -> ServiceClient:
+    """Get or create station service client."""
+    global _station_client
+    if _station_client is None:
+        _station_client = ServiceClient(
+            base_url=settings.STATION_SERVICE_URL,
+            service_name="station-service",
+        )
+    return _station_client
 
 
-@router.get("/{station_id:path}")
-async def get_station(request: Request, station_id: str):
-    """Get station by ID or code."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}")
+@router.api_route("", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@router.api_route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+async def proxy_station_request(
+    request: Request,
+    path: str = "",
+) -> Response:
+    """Proxy all station service requests."""
+    client = get_station_client()
 
+    try:
+        if client._client is None:
+            await client.connect()
 
-@router.put("/{station_id:path}")
-async def update_station(request: Request, station_id: str):
-    """Update station."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}")
+        url = f"/api/v1/stations/{path}" if path else "/api/v1/stations"
 
+        forward_headers = {}
+        for key, value in request.headers.items():
+            if key.lower() not in ("host", "content-length", "transfer-encoding"):
+                forward_headers[key] = value
 
-@router.delete("/{station_id:path}")
-async def delete_station(request: Request, station_id: str):
-    """Delete station."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}")
+        body = None
+        if request.method in ("POST", "PUT", "PATCH"):
+            body = await request.body()
+            if body:
+                import json
+                try:
+                    body = json.loads(body)
+                except Exception:
+                    pass
 
+        response = await client.request(
+            method=request.method,
+            path=url,
+            params=dict(request.query_params),
+            json=body,
+            headers=forward_headers,
+        )
 
-@router.post("/{station_id:path}/configure-api")
-async def configure_station_api(request: Request, station_id: str):
-    """Configure station API endpoint."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/configure-api")
+        return JSONResponse(
+            status_code=response.status_code,
+            content=response.json() if response.content else {},
+            headers=dict(response.headers),
+        )
 
-
-@router.post("/{station_id:path}/activate")
-async def activate_station(request: Request, station_id: str):
-    """Activate station."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/activate")
-
-
-@router.post("/{station_id:path}/deactivate")
-async def deactivate_station(request: Request, station_id: str):
-    """Deactivate station."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/deactivate")
-
-
-@router.post("/{station_id:path}/record-readings")
-async def record_station_readings(request: Request, station_id: str):
-    """Record station readings."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/record-readings")
-
-
-@router.get("/{station_id:path}/readings")
-async def get_station_readings(request: Request, station_id: str):
-    """Get station readings."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/readings")
-
-
-@router.get("/{station_id:path}/readings/latest")
-async def get_latest_station_readings(request: Request, station_id: str):
-    """Get latest station readings."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, f"/api/v1/stations/{station_id}/readings/latest")
-
-
-@router.get("/nearby")
-async def find_nearby_stations(request: Request):
-    """Find nearby stations."""
-    client = ServiceClient(settings.STATION_SERVICE_URL)
-    return await client.forward_request(request, "/api/v1/stations/nearby")
+    except Exception as e:
+        logger.error(f"Station service error: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": f"Station service unavailable: {str(e)}"},
+        )

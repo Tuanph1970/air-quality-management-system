@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const STATION_SERVICE_API_URL = import.meta.env.VITE_STATION_SERVICE_API_URL || 'http://localhost:8007';
+const API_GATEWAY_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Create axios instance for station service API
+// Create axios instance for station service API (routed through API gateway)
 const apiClient = axios.create({
-  baseURL: `${STATION_SERVICE_API_URL}/api/v1`,
+  baseURL: `${API_GATEWAY_URL}/api/v1`,
   timeout: 120000, // 2 minutes for data fetch operations
 });
 
