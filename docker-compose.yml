@@ -636,6 +636,48 @@ services:
       - dev
 
   # ===========================================================================
+  # STATION EXCEL FETCHER - Envisoft data → Excel → MySQL
+  # ===========================================================================
+  station-excel-fetcher:
+    build:
+      context: ./services/station-excel-fetcher
+      dockerfile: Dockerfile
+    container_name: aqms-station-excel-fetcher
+    ports:
+      - "${STATION_EXCEL_FETCHER_PORT:-8011}:8011"
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=station-excel-fetcher
+      - SERVICE_PORT=8011
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_excel_fetcher_db?charset=utf8mb4
+      - RAW_DATA_ROOT=/app/raw_excel_data
+      - FETCH_CRON_EXPRESSION=1 0 * * *
+      - FETCH_ON_STARTUP=false
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVISOFT_BASIC_USER=${ENVISOFT_BASIC_USER:-tw-admin}
+      - ENVISOFT_BASIC_PASS=${ENVISOFT_BASIC_PASS:-tw-admin}
+      - ENVISOFT_FORM_USER=${ENVISOFT_FORM_USER:-duongngocbach}
+      - ENVISOFT_FORM_PASS=${ENVISOFT_FORM_PASS:-1234567890!@#$%^&*()}
+    volumes:
+      - station_excel_data:/app/raw_excel_data
+    extra_hosts:
+      - "admin-qttd.tedp.vn:103.88.113.253"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8011/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # FRONTEND - Nginx serving production build
   # ===========================================================================
   frontend:
@@ -679,6 +721,8 @@ volumes:
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  station_excel_data:
     driver: local
 
 # =============================================================================

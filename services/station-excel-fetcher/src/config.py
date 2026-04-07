@@ -14,7 +14,7 @@ load_dotenv()
 def _env(key: str, default: Optional[str] = None) -> str:
     val = os.getenv(key, default)
     if val is None:
-        raise ValueError(f"Required environment variable not set: {key}")
+        raise ValueError(f"Required env var not set: {key}")
     return val
 
 
@@ -38,84 +38,79 @@ class Config:
     # ── Service ──────────────────────────────────────────────────────────────
     SERVICE_NAME: str = os.getenv("SERVICE_NAME", "station-excel-fetcher")
     SERVICE_PORT: int = _env_int("SERVICE_PORT", 8011)
+    DEBUG: bool = _env_bool("DEBUG", False)
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # ── Paths ─────────────────────────────────────────────────────────────────
-    # Root mount — the docker volume bind comes here
+    # ── MySQL Database ──────────────────────────────────────────────────────
+    DATABASE_URL: str = _env(
+        "DATABASE_URL",
+        "mysql+aiomysql://root:Mysql_2026@mysql:3306/station_excel_fetcher_db",
+    )
+
+    # ── Paths ───────────────────────────────────────────────────────────────
     MOUNT_ROOT: Path = Path(os.getenv("RAW_DATA_ROOT", "/app/raw_excel_data"))
 
     @property
     def output_dir(self) -> Path:
-        """Directory where raw Excel files are saved."""
         d = self.MOUNT_ROOT / "raw"
         d.mkdir(parents=True, exist_ok=True)
         return d
 
     @property
     def archive_dir(self) -> Path:
-        """Directory for processed/archived Excel files."""
         d = self.MOUNT_ROOT / "processed"
         d.mkdir(parents=True, exist_ok=True)
         return d
 
     @property
     def log_dir(self) -> Path:
-        """Directory for fetch logs."""
         d = self.MOUNT_ROOT / "logs"
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    # ── Envisoft API ──────────────────────────────────────────────────────────
-    ENVISOFT_BASE_URL: str = _env(
-        "ENVISOFT_BASE_URL", "https://tw-envisoft.tedp.vn"
-    )
-    ENVISOFT_API_BASE_URL: str = _env(
-        "ENVISOFT_API_BASE_URL", "https://admin-qttd.tedp.vn"
-    )
+    # ── Envisoft Auth ───────────────────────────────────────────────────────
+    ENVISOFT_BASE_URL: str = "https://tw-envisoft.tedp.vn"
+    ENVISOFT_API_BASE_URL: str = "https://admin-qttd.tedp.vn"
+
     # Layer 1: HTTP Basic Auth
-    ENVISOFT_BASIC_USER: str = _env("ENVISOFT_BASIC_USER", "tw-admin")
-    ENVISOFT_BASIC_PASS: str = _env("ENVISOFT_BASIC_PASS", "tw-admin")
-    # Layer 2: Web form login
-    ENVISOFT_FORM_USER: str = _env("ENVISOFT_FORM_USER", "duongngocbach")
-    ENVISOFT_FORM_PASS: str = _env("ENVISOFT_FORM_PASS", "1234567890!@#$%^&*()")
+    ENVISOFT_BASIC_USER: str = os.getenv("ENVISOFT_BASIC_USER", "tw-admin")
+    ENVISOFT_BASIC_PASS: str = os.getenv("ENVISOFT_BASIC_PASS", "tw-admin")
 
-    # Data API endpoint (discovered via network interception)
-    ENVISOFT_DATA_ENDPOINT: str = (
-        f"{ENVISOFT_API_BASE_URL}/api/eos/data-average-by-time/exceed-by-time"
-    )
-    ENVISOFT_STATIONS_ENDPOINT: str = (
-        f"{ENVISOFT_API_BASE_URL}/api/stations/search/"
-        "findByStationTypeAndProvinceIdAndFtpConnectionStatusAndStatus"
-        "AndUsingStatusAndStationNameAndTenantCode"
-    )
+    # Layer 2: Web form login (inside iframe)
+    ENVISOFT_FORM_USER: str = os.getenv("ENVISOFT_FORM_USER", "duongngocbach")
+    ENVISOFT_FORM_PASS: str = os.getenv("ENVISOFT_FORM_PASS", "1234567890!@#$%^&*()")
 
-    # Default fetch parameters
-    ENVISOFT_STATION_TYPE: str = os.getenv("ENVISOFT_STATION_TYPE", "KK")  # KK=Air quality
-    ENVISOFT_VIEW_TYPE: str = os.getenv("ENVISOFT_VIEW_TYPE", "hour")  # minute|hour|8hour|day|month
-    ENVISOFT_PAGE_SIZE: int = _env_int("ENVISOFT_PAGE_SIZE", 200)
+    # ── Target Stations (5 stations) ──────────────────────────────────────
+    TARGET_STATIONS: list[dict[str, str]] = [
+        {
+            "station_id": "32464751000956754854540602537",
+            "name": "Station Tân Phú",
+        },
+        {
+            "station_id": "32464751000956754854540602540",
+            "name": "Station Quận 12",
+        },
+        {
+            "station_id": "32464751000956754854540602541",
+            "name": "Station Bình Tân",
+        },
+        {
+            "station_id": "32481806597974747176167416654",
+            "name": "Station Quận Thủ Đức",
+        },
+        {
+            "station_id": "32481806690208467544715174761",
+            "name": "Station Thành phố",
+        },
+    ]
 
-    # ── Scheduler ─────────────────────────────────────────────────────────────
-    # Run at :01 of every hour (01:01, 02:01, ... 23:01)
+    # ── Scheduler ───────────────────────────────────────────────────────────
+    # Daily at 00:01 AM
     FETCH_CRON_EXPRESSION: str = os.getenv(
-        "FETCH_CRON_EXPRESSION", "1 * * * *"
-    )  # minute=1, every hour
+        "FETCH_CRON_EXPRESSION", "1 0 * * *"
+    )
 
-    # Date range for each fetch (how many days back)
-    FETCH_DAYS_BACK: int = _env_int("FETCH_DAYS_BACK", 2)
-
-    # Maximum concurrent browser pages (for station pagination)
-    MAX_PARALLEL_STATIONS: int = _env_int("MAX_PARALLEL_STATIONS", 5)
-
-    # ── Dev / Debug ───────────────────────────────────────────────────────────
-    # If True, uses cached cookies from envisoft_cookies.json instead of real login
-    USE_CACHED_COOKIES: bool = _env_bool("USE_CACHED_COOKIES", False)
-    COOKIES_CACHE_PATH: Path = Path(os.getenv(
-        "COOKIES_CACHE_PATH",
-        str(Path(__file__).parent.parent.parent.parent / "envisoft_cookies.json")
-    ))
-
-    # ── Startup Behaviour ──────────────────────────────────────────────────────
-    # On startup, run a fetch immediately (for testing)
+    # ── Startup Behaviour ───────────────────────────────────────────────────
     FETCH_ON_STARTUP: bool = _env_bool("FETCH_ON_STARTUP", False)
 
 

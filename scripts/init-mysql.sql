@@ -37,3 +37,7 @@ CREATE DATABASE IF NOT EXISTS station_ingestion_db
 CREATE DATABASE IF NOT EXISTS wrf_db
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
+
+CREATE DATABASE IF NOT EXISTS station_excel_fetcher_db
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;

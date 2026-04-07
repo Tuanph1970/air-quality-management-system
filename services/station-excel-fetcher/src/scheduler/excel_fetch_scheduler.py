@@ -1,7 +1,13 @@
-"""APScheduler-based Excel fetch scheduler for Envisoft data.
+"""APScheduler-based daily fetch scheduler for Envisoft data.
 
-Runs at :01 of every hour (01:01, 02:01, ... 23:01) to fetch data from Envisoft.
-The fetched data is saved as Excel files in the configured output directory.
+Runs at 00:01 AM daily to fetch the previous full day's hourly data
+from Envisoft for 5 target stations.
+
+Flow:
+  1. Launch Playwright → iframe login → capture JWT + tenantToken
+  2. Fetch hourly data for all 5 stations
+  3. Save to Excel (kept on disk for data correction)
+  4. Bulk upsert into MySQL (upsert = INSERT ON DUPLICATE KEY UPDATE)
 """
 
 from __future__ import annotations
@@ -20,10 +26,9 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_cron(expression: str) -> CronTrigger:
-    """Parse a standard 5-field cron expression into an APScheduler CronTrigger."""
     parts = expression.strip().split()
     if len(parts) != 5:
-        raise ValueError(f"Expected 5-field cron expression, got: {expression!r}")
+        raise ValueError(f"Expected 5-field cron, got: {expression!r}")
 
     minute, hour, day, month, day_of_week = parts
     return CronTrigger(
@@ -36,145 +41,127 @@ def _parse_cron(expression: str) -> CronTrigger:
 
 
 class ExcelFetchScheduler:
-    """Manages periodic Envisoft Excel data fetch jobs.
-
-    The scheduler runs at :01 of every hour to fetch the previous hour's data
-    from the Envisoft API and save it as Excel files.
-    """
+    """Daily scheduler that fetches Envisoft data → Excel → MySQL."""
 
     def __init__(self, fetch_callback=None):
-        """Initialize scheduler.
-
-        Args:
-            fetch_callback: Async function to call for fetching data.
-                           If None, uses the default Envisoft fetch logic.
-        """
         self.fetch_callback = fetch_callback
         self.scheduler = AsyncIOScheduler()
 
     def start(self) -> None:
-        """Register jobs and start the scheduler."""
-        # Register the periodic fetch job
         self.scheduler.add_job(
             self._run_fetch,
             trigger=_parse_cron(config.FETCH_CRON_EXPRESSION),
-            id="fetch_envisoft_excel",
-            name="Fetch Envisoft data to Excel",
+            id="fetch_envisoft_daily",
+            name="Fetch Envisoft daily Excel + MySQL",
             replace_existing=True,
         )
-
         logger.info(
-            f"Excel fetch job scheduled: {config.FETCH_CRON_EXPRESSION}"
+            f"Daily fetch scheduled: {config.FETCH_CRON_EXPRESSION} "
+            f"(runs at {config.FETCH_CRON_EXPRESSION} → fetches previous day)"
         )
-
         self.scheduler.start()
         logger.info("ExcelFetchScheduler started")
 
     def stop(self) -> None:
-        """Shut down the scheduler gracefully."""
         if self.scheduler.running:
             self.scheduler.shutdown(wait=False)
             logger.info("ExcelFetchScheduler stopped")
 
     async def _run_fetch(self) -> None:
-        """Execute the scheduled fetch job."""
+        """Execute the daily scheduled fetch."""
         logger.info("=" * 60)
-        logger.info("Scheduler: Starting Envisoft Excel fetch")
+        logger.info("Scheduler: Starting daily Envisoft fetch")
         logger.info("=" * 60)
 
         try:
-            # Determine date range
-            now = datetime.utcnow()
-            # Fetch yesterday and today (to catch any late data)
-            from_date = (now - timedelta(days=config.FETCH_DAYS_BACK)).strftime("%Y-%m-%d")
-            to_date = now.strftime("%Y-%m-%d")
-
-            logger.info(f"Date range: {from_date} to {to_date}")
-
-            # Use callback if provided, otherwise use default fetch
-            if self.fetch_callback:
-                await self.fetch_callback(
-                    from_date=from_date,
-                    to_date=to_date,
-                    view_type=config.ENVISOFT_VIEW_TYPE,
-                )
-            else:
-                await self._default_fetch(from_date, to_date)
-
-            logger.info("Scheduler: Excel fetch completed successfully")
-
+            await self._default_fetch()
+            logger.info("Scheduler: Daily fetch completed successfully")
         except Exception:
-            logger.exception("Scheduler: Excel fetch failed")
+            logger.exception("Scheduler: Daily fetch FAILED")
 
-    async def _default_fetch(self, from_date: str, to_date: str) -> None:
-        """Default fetch implementation using EnvisoftClient."""
-        from .envisoft_client import EnvisoftClient
+    async def _default_fetch(self) -> None:
+        """Fetch → Excel → MySQL pipeline."""
+        from ..fetcher.envisoft_client import EnvisoftClient
+        from ..infrastructure.persistence.reading_repository import ReadingRepository
+
+        # ── Determine date range ──────────────────────────────────────────
+        # Previous full day (00:00:00 → 23:59:59)
+        today = datetime.utcnow().date()
+        from_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        to_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        logger.info(f"[SCHEDULER] Fetching: {from_date}")
+        logger.info(f"[SCHEDULER] Stations: {len(config.TARGET_STATIONS)}")
+
+        # ── Fetch data via Playwright ──────────────────────────────────────
+        excel_path: Path | None = None
 
         async with EnvisoftClient() as client:
-            # Fetch data for all stations
             records = await client.fetch_all_stations_data(
                 from_date=from_date,
                 to_date=to_date,
-                station_type=config.ENVISOFT_STATION_TYPE,
-                view_type=config.ENVISOFT_VIEW_TYPE,
             )
 
-            if records:
-                # Generate filename with timestamp
-                timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-                filename = f"envisoft_{from_date}_{to_date}_{timestamp}.xlsx"
+            if not records:
+                logger.warning("[SCHEDULER] No records fetched — skipping save")
+                return
 
-                # Save to Excel
-                client.save_to_excel(records, filename, sheet_name="Air Quality Data")
+            # ── Save to Excel ───────────────────────────────────────────
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            excel_filename = f"envisoft_{from_date}_{timestamp}.xlsx"
+            excel_path = client.save_to_excel(records, excel_filename)
+            excel_path_str = str(excel_path) if excel_path else None
 
-                # Log to file
-                log_file = config.log_dir / f"fetch_{timestamp}.log"
-                log_file.write_text(
-                    f"Fetched {len(records)} records\n"
-                    f"Date range: {from_date} to {to_date}\n"
-                    f"Output: {filename}\n"
-                    f"Time: {datetime.utcnow().isoformat()}\n"
-                )
-            else:
-                logger.warning("No data fetched")
+            # ── Save to MySQL ────────────────────────────────────────────
+            repo = ReadingRepository()
+            inserted = await repo.bulk_upsert(
+                records=records,
+                excel_path=excel_path_str,
+            )
+            logger.info(f"[SCHEDULER] MySQL upserted: {inserted} rows")
+
+            # ── Log summary ─────────────────────────────────────────────
+            log_file = config.log_dir / f"fetch_{timestamp}.log"
+            log_file.write_text(
+                f"Date: {from_date}\n"
+                f"Stations: {len(config.TARGET_STATIONS)}\n"
+                f"Records fetched: {len(records)}\n"
+                f"Excel: {excel_path}\n"
+                f"MySQL inserted: {inserted}\n"
+                f"Timestamp: {datetime.utcnow().isoformat()}\n"
+            )
+            logger.info(f"[SCHEDULER] Log: {log_file}")
 
     async def trigger_manual_fetch(
         self,
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
-        view_type: str = "hour",
     ) -> dict:
         """Trigger an on-demand fetch.
 
         Args:
-            from_date: Start date (defaults to FETCH_DAYS_BACK days ago)
-            to_date: End date (defaults to today)
-            view_type: Data averaging period
+            from_date: Start date YYYY-MM-DD (defaults to yesterday)
+            to_date: End date YYYY-MM-DD (defaults to yesterday)
 
         Returns:
-            Dict with status and details
+            Dict with status and details.
         """
-        now = datetime.utcnow()
+        yesterday = (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
 
         if from_date is None:
-            from_date = (now - timedelta(days=config.FETCH_DAYS_BACK)).strftime("%Y-%m-%d")
+            from_date = yesterday
         if to_date is None:
-            to_date = now.strftime("%Y-%m-%d")
+            to_date = yesterday
 
-        logger.info(f"Manual fetch triggered: {from_date} to {to_date}")
+        logger.info(f"[MANUAL] Fetch triggered: {from_date} → {to_date}")
 
         try:
-            if self.fetch_callback:
-                await self.fetch_callback(
-                    from_date=from_date,
-                    to_date=to_date,
-                    view_type=view_type,
-                )
-            else:
-                await self._default_fetch(from_date, to_date)
-
-            return {"status": "ok", "from_date": from_date, "to_date": to_date}
-
-        except Exception as e:
-            logger.exception("Manual fetch failed")
-            return {"status": "error", "message": str(e)}
+            await self._default_fetch()
+            return {
+                "status": "ok",
+                "from_date": from_date,
+                "to_date": to_date,
+            }
+        except Exception as exc:
+            logger.exception("[MANUAL] Fetch failed")
+            return {"status": "error", "message": str(exc)}
