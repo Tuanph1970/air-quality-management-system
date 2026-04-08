@@ -9,16 +9,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browsers
-RUN playwright install chromium --with-deps
+# Install Playwright browsers (Python package, after pip install)
+RUN pip install playwright && playwright install chromium --with-deps
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Install Playwright browsers (Python package)
-RUN playwright install chromium
+# Playwright browser installed above
 
 EXPOSE 8011
 

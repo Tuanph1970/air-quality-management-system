@@ -486,12 +486,15 @@ services:
       context: ./services/purpleair-listener
       dockerfile: Dockerfile
     container_name: aqms-purpleair-listener
+    ports:
+      - "${PURPLEAIR_LISTENER_HEALTH_PORT:-8012}:8012"
     environment:
       - PYTHONPATH=/app
       - SERVICE_NAME=purpleair-listener
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - SENSOR_SERVICE_URL=http://sensor-service:8002
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - HEALTH_PORT=8012
     volumes:
       - ./services/purpleair-listener/src:/app/src
     depends_on:
@@ -507,6 +510,12 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8012/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # ===========================================================================
   # STATION INGESTION SERVICE - External station API data ingestion
@@ -609,7 +618,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: aqms-frontend-dev
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3002}:3000"
     environment:
       - VITE_API_URL=http://localhost:${API_GATEWAY_PORT:-8000}/api/v1
       - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
@@ -663,7 +672,7 @@ services:
     extra_hosts:
       - "admin-qttd.tedp.vn:103.88.113.253"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8011/health || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8011/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -689,7 +698,7 @@ services:
         VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     container_name: aqms-frontend
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-3002}:80"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
       interval: 15s
