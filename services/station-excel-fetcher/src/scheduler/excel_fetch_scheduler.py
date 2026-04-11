@@ -80,7 +80,7 @@ class ExcelFetchScheduler:
             logger.exception("Scheduler: Daily fetch FAILED")
 
     async def _default_fetch(self) -> None:
-        """Fetch → Excel → MySQL pipeline."""
+        """Fetch → Excel downloads → parse → MySQL pipeline."""
         from ..fetcher.envisoft_client import EnvisoftClient
         from ..infrastructure.persistence.reading_repository import ReadingRepository
 
@@ -90,14 +90,12 @@ class ExcelFetchScheduler:
         from_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
         to_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
 
-        logger.info(f"[SCHEDULER] Fetching: {from_date}")
+        logger.info(f"[SCHEDULER] Exporting: {from_date}")
         logger.info(f"[SCHEDULER] Stations: {len(config.TARGET_STATIONS)}")
 
-        # ── Fetch data via Playwright ──────────────────────────────────────
-        excel_path: Path | None = None
-
+        # ── Fetch data via Playwright Excel export ──────────────────────────
         async with EnvisoftClient() as client:
-            records = await client.fetch_all_stations_data(
+            records = await client.export_all_stations_data(
                 from_date=from_date,
                 to_date=to_date,
             )
@@ -106,28 +104,19 @@ class ExcelFetchScheduler:
                 logger.warning("[SCHEDULER] No records fetched — skipping save")
                 return
 
-            # ── Save to Excel ───────────────────────────────────────────
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            excel_filename = f"envisoft_{from_date}_{timestamp}.xlsx"
-            excel_path = client.save_to_excel(records, excel_filename)
-            excel_path_str = str(excel_path) if excel_path else None
-
-            # ── Save to MySQL ────────────────────────────────────────────
+            # ── Save to MySQL ────────────────────────────────────────────────
             repo = ReadingRepository()
-            inserted = await repo.bulk_upsert(
-                records=records,
-                excel_path=excel_path_str,
-            )
+            inserted = await repo.bulk_upsert(records=records)
             logger.info(f"[SCHEDULER] MySQL upserted: {inserted} rows")
 
             # ── Log summary ─────────────────────────────────────────────
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             log_file = config.log_dir / f"fetch_{timestamp}.log"
             log_file.write_text(
                 f"Date: {from_date}\n"
                 f"Stations: {len(config.TARGET_STATIONS)}\n"
                 f"Records fetched: {len(records)}\n"
-                f"Excel: {excel_path}\n"
-                f"MySQL inserted: {inserted}\n"
+                f"MySQL upserted: {inserted}\n"
                 f"Timestamp: {datetime.utcnow().isoformat()}\n"
             )
             logger.info(f"[SCHEDULER] Log: {log_file}")

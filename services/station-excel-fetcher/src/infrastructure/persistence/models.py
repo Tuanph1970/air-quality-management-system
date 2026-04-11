@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -40,7 +41,7 @@ class EnvisoftHourlyReadingModel(Base):
     # Time
     measured_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
     fetched_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=datetime.utcnow
+        DateTime, nullable=False, server_default=text("(CURRENT_TIMESTAMP)")
     )
 
     # Pollutants (µg/m³)

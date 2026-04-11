@@ -80,28 +80,14 @@ class Config:
     ENVISOFT_FORM_USER: str = os.getenv("ENVISOFT_FORM_USER", "duongngocbach")
     ENVISOFT_FORM_PASS: str = os.getenv("ENVISOFT_FORM_PASS", "1234567890!@#$%^&*()")
 
-    # ── Target Stations (5 stations) ──────────────────────────────────────
+    # ── Target Stations (Hà Nội — exact aria-label match in dropdown) ──────
+    # Province = "TP. Hà Nội" in province dropdown, then station by aria-label
     TARGET_STATIONS: list[dict[str, str]] = [
-        {
-            "station_id": "32464751000956754854540602537",
-            "name": "Station Tân Phú",
-        },
-        {
-            "station_id": "32464751000956754854540602540",
-            "name": "Station Quận 12",
-        },
-        {
-            "station_id": "32464751000956754854540602541",
-            "name": "Station Bình Tân",
-        },
-        {
-            "station_id": "32481806597974747176167416654",
-            "name": "Station Quận Thủ Đức",
-        },
-        {
-            "station_id": "32481806690208467544715174761",
-            "name": "Station Thành phố",
-        },
+        {"station_id": "32464751000956754854540602537", "name": "Hà Nội: 556 Nguyễn Văn Cừ (KK)"},
+        {"station_id": "32464751000956754854540602541", "name": "Hà Nội: ĐHBK cổng Parabol đường Giải Phóng (KK)"},
+        {"station_id": "32464751056296987075669257406", "name": "Hà Nội: Công viên Nhân Chính - Khuất Duy Tiến (KK)"},
+        {"station_id": "32464751056296987075669257407", "name": "Hà Nội: Trạm không khí cố định CCBVMT (KK)"},
+        {"station_id": "32481806690208467544715174761", "name": "Hà Nội: Trạm không khí cố định_phường Minh Khai (KK)"},
     ]
 
     # ── Scheduler ───────────────────────────────────────────────────────────
