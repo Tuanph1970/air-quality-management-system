@@ -13,14 +13,16 @@ Clients (Web, Mobile, IoT)
          │
    API Gateway (8000) ─── JWT Auth, Rate Limiting, Routing
          │
-  ┌──────┼──────┬───────┬───────┬───────┬───────┬───────┐
-  ▼      ▼      ▼       ▼       ▼       ▼       ▼       ▼
-Factory Sensor Alert  AirQuality  User  RemoteSensing Station WRF
-(8001)  (8002) (8003)  (8004)  (8005)   (8006)      (8009)
-                            │              │
-                   RabbitMQ (async events)
-                   MySQL 8.0 (per-service DBs)
-                   Redis (cache)
+  ┌──────┼──────┼───────┼───────┼───────┼───────┼───────┬───────┐
+  ▼      ▼      ▼       ▼       ▼       ▼       ▼       ▼       ▼
+Factory Sensor Alert  AirQuality  User  RemoteSensing Station  WRF
+(8001)  (8002) (8003) (8004)  (8005)  (8006)   (8007)  (8009)
+                                                              │
+PurpleAir ──► purpleair-ingestion ──► RabbitMQ ──► purpleair-listener
+Station API ──► station-ingestion ──► MySQL         │
+Envisoft ────► station-excel-fetcher                            │
+                            RabbitMQ (async events, 5 topic exchanges)
+                            MySQL 8.0 (per-service DBs), Redis 7
 ```
 
 ### Tech Stack
@@ -42,26 +44,26 @@ Factory Sensor Alert  AirQuality  User  RemoteSensing Station WRF
 
 | Service | Host Port | Database | Purpose |
 |---------|----------|----------|---------|
-| api-gateway | 8000 | — | Single entry point, proxies to all backend services |
+| api-gateway | 8000 | — | Single entry point, proxies all backend services |
 | factory-service | 8001 | factory_db | Factories, emission limits, suspensions |
 | sensor-service | 8002 | sensor_db | Sensor registration, readings |
 | alert-service | 8003 | alert_db | Violations, alert thresholds |
 | air-quality-service | 8004 | Redis only | AQI calculation, data fusion, Redis cache |
 | user-service | 8005 | user_db | Auth, JWT tokens, roles |
 | remote-sensing-service | 8006 | remote_sensing_db | Satellite data, Excel import |
-| station-service | 8007 | station_db | Official monitoring stations |
+| station-service | 8007 | station_db | Official monitoring stations, ingestion |
 | wrf-service | 8009 | wrf_db | WRF weather model (sample-data mode by default) |
 
-### Ingestion Services (no REST API)
+### Ingestion Services (no REST API, continuous runners)
 
-| Service | Host Port | Purpose |
-|---------|----------|---------|
-| purpleair-ingestion-service | 8008 | Polls PurpleAir cloud API → RabbitMQ |
-| purpleair-listener | 8012 | Consumes PurpleAir events → MySQL |
-| station-ingestion-service | 8010 | Fetches from `admin-qttd.tedp.vn` |
-| station-excel-fetcher | 8011 | Downloads Envisoft Excel → MySQL |
+| Service | Purpose |
+|---------|---------|
+| purpleair-ingestion-service (8008) | Polls PurpleAir cloud API → RabbitMQ |
+| purpleair-listener (8012) | Consumes PurpleAir events → MySQL (sensor_db) |
+| station-ingestion-service | Fetches from `admin-qttd.tedp.vn` → station_db |
+| station-excel-fetcher (8011) | Downloads Envisoft Excel → station_excel_fetcher_db |
 
-### Databases (auto-created by `scripts/init-mysql.sql`)
+### Databases (created by `scripts/init-mysql.sql`)
 
 `factory_db`, `sensor_db`, `alert_db`, `user_db`, `remote_sensing_db`, `station_db`, `station_ingestion_db`, `wrf_db`, `station_excel_fetcher_db`
 
@@ -73,6 +75,25 @@ MySQL inside Docker is `mysql:3306`; host port is **3307** (3306 is free for loc
 |---------|------|-------------|
 | frontend (nginx) | 3000 | Production build |
 | frontend-dev (vite) | 3002 | Hot-reload dev (use `docker compose --profile dev up -d`) |
+
+---
+
+## API Gateway Routing
+
+The gateway uses `aiohttp.ClientSession` (not `httpx`) to call backend services asynchronously. All routes live under `/api/v1/`:
+
+- `GET /api/v1/auth/*` → user-service (public, no JWT)
+- `GET/POST /api/v1/factories/*` → factory-service
+- `GET/POST /api/v1/sensors/*` → sensor-service
+- `GET/POST /api/v1/alerts/*`, `/api/v1/violations/*` → alert-service
+- `GET /api/v1/air-quality/*` → air-quality-service (Redis-backed)
+- `GET/POST /api/v1/satellite/*` → remote-sensing-service
+- `GET/POST /api/v1/stations/*` → station-service
+- `GET/POST /api/v1/purpleair/*` → purpleair-ingestion-service
+- `GET/POST /api/v1/wrf/*` → wrf-service
+- `GET /api/v1/dashboard/*` → aggregated (requires JWT, all services)
+
+Service URLs and `ServiceClientRegistry` are configured in `src/main.py` startup and reused via `src/utils/service_client.py`.
 
 ---
 
@@ -104,13 +125,13 @@ shared/
 
 ---
 
-## RabbitMQ Topology (from `shared/messaging/config.py`)
+## RabbitMQ Topology
 
 **5 topic exchanges**: `factory.events`, `sensor.events`, `alert.events`, `satellite.events`, `fusion.events`
 
 Key routing keys: `sensor.reading.created`, `alert.violation.detected`, `alert.violation.resolved`, `factory.suspended`, `factory.resumed`, `satellite.data.fetched`, `fusion.completed`, `validation.alert`
 
-The consumer in `shared/messaging/consumer.py` declares ALL 5 exchanges on connect — `FUSION_EXCHANGE` and `SATELLITE_EXCHANGE` must be in `_ALL_EXCHANGES`.
+`shared/messaging/consumer.py` declares all 5 exchanges on connect — `FUSION_EXCHANGE` and `SATELLITE_EXCHANGE` must always be in `_ALL_EXCHANGES`. The purpleair-ingestion-service publishes to `sensor.events` with routing key `sensor.reading.created`.
 
 ---
 

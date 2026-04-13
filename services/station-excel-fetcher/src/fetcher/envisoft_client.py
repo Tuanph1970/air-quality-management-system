@@ -193,15 +193,17 @@ class EnvisoftClient:
       4. Parse Excel → records → return
     """
 
-    # CSS/ARIA selectors inside the iframe
-    _SEL_DATA_TYPE    = '[ref="f8e11"]'   # combobox: minute / hourly / raw
-    _SEL_PROVINCE     = '[ref="f8e18"]'   # combobox: province
-    _SEL_STATION      = '[ref="f8e29"]'   # combobox: station
-    _SEL_DATA_TYPE_2  = '[ref="f8e40"]'   # combobox: data sub-type
-    _SEL_AIR_TYPE     = '[ref="f8e46"]'   # combobox: air type (Không khí)
-    _SEL_START_DATE   = '[ref="f8e55"]'   # textbox: start date
-    _SEL_END_DATE     = '[ref="f8e62"]'   # textbox: end date
-    _SEL_EXPORT_BTN   = '[ref="f8e83"]'   # button: XUẤT FILE
+    # CSS selectors inside the iframe
+    # The page uses Ant Design v5 .ant-select with .ant-select-selector clickable areas.
+    # 0=Data type, 1=Province, 2=Station, 3=Data subtype, 4=Air type
+    _SEL_DATA_TYPE    = ".ant-select-selector"  # nth=0: minute / hourly / raw
+    _SEL_PROVINCE     = ".ant-select-selector"  # nth=1: province (TP. Hà Nội)
+    _SEL_STATION      = ".ant-select-selector"  # nth=2: station dropdown
+    _SEL_DATA_TYPE_2  = ".ant-select-selector"  # nth=3: data sub-type
+    _SEL_AIR_TYPE     = ".ant-select-selector"  # nth=4: air type (Không khí)
+    _SEL_START_DATE   = '[placeholder="Ngày bắt đầu"]'   # textbox: start date
+    _SEL_END_DATE     = '[placeholder="Ngày kết thúc"]'   # textbox: end date
+    _SEL_EXPORT_BTN   = "button:has-text('XUẤT FILE')"   # button: XUẤT FILE
     _SEL_TABLE        = "table"           # data table
 
     def __init__(self):
@@ -353,60 +355,31 @@ class EnvisoftClient:
     # Ant Design dropdown helpers (click → wait for menu → select)
     # ──────────────────────────────────────────────────────────────────────────
 
-    async def _open_dropdown(self, selector: str) -> None:
+    async def _open_dropdown(self, selector: str, nth: int = 0) -> None:
         """Open an Ant Design combobox dropdown."""
         frame = self._page.frame_locator("iframe")
-        await frame.locator(selector).click()
+        await frame.locator(selector).nth(nth).click()
         await self._page.wait_for_timeout(800)
 
-    async def _select_dropdown_option(self, text_contains: str) -> bool:
-        """Click a dropdown option by partial text match, scrolling to find it if needed.
+    async def _select_dropdown_option_by_index(self, index: int) -> bool:
+        """Select a dropdown option by its 1-based index using keyboard navigation.
 
-        Ant Design virtual lists lazy-render items — scroll down through the
-        .rc-virtual-list-holder-inner element until the option is found.
+        Opens the virtualized Ant Design dropdown menu, then presses Down arrow
+        N-1 times followed by Enter to pick the option.
         """
         frame = self._page.frame_locator("iframe")
-
-        # Try up to 20 scroll iterations (enough for 100+ station list)
-        for _ in range(20):
-            # Method 1: aria-label match (exact, most reliable)
-            try:
-                item = frame.locator(f"[aria-label='{text_contains}']").first
-                await item.scroll_into_view_if_needed(timeout=2000)
-                await item.click(timeout=3000)
-                await self._page.wait_for_timeout(500)
-                logger.info(f"[DROPDOWN] Selected by aria-label: {text_contains}")
-                return True
-            except PlaywrightError:
-                pass
-
-            # Method 2: visible text inside option
-            try:
-                item = frame.locator(
-                    f".ant-select-item-option-content:has-text('{text_contains}')"
-                ).first
-                await item.scroll_into_view_if_needed(timeout=2000)
-                await item.click(timeout=3000)
-                await self._page.wait_for_timeout(500)
-                logger.info(f"[DROPDOWN] Selected by text: {text_contains}")
-                return True
-            except PlaywrightError:
-                pass
-
-            # Not found yet — scroll down the virtual list
-            try:
-                scroll_el = frame.locator(".rc-virtual-list-holder-inner").first
-                await frame.locator(".ant-select-dropdown").hover()
-                await scroll_el.evaluate(
-                    "el => el.style.transform = 'translateY(' + "
-                    "(parseInt(el.style.transform.match(/\\d+/)?.[0] || 0) + 200) + 'px)'"
-                )
-                await self._page.wait_for_timeout(300)
-            except PlaywrightError:
-                break  # No more scrollable area
-
-        logger.warning(f"[DROPDOWN] Option not found after scrolling: {text_contains}")
-        return False
+        try:
+            # Press Down (index - 1) times to reach the target option, then Enter
+            for _ in range(index - 1):
+                await self._page.keyboard.press("ArrowDown")
+                await self._page.wait_for_timeout(100)
+            await self._page.keyboard.press("Enter")
+            await self._page.wait_for_timeout(500)
+            logger.info(f"[DROPDOWN] Selected option #{index}")
+            return True
+        except PlaywrightError as exc:
+            logger.warning(f"[DROPDOWN] Failed to select index {index}: {exc}")
+            return False
 
     async def _wait_for_table_load(self, timeout: int = 15000) -> bool:
         """Wait until the data table has rows (non-header rows)."""
@@ -422,36 +395,30 @@ class EnvisoftClient:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def _pre_select_province_and_data_type(self) -> None:
-        """Called once before looping stations: select "theo phút" + TP. Hà Nội."""
-        logger.info("[PAGE] Pre-selecting data type: Dữ liệu theo phút...")
-        await self._open_dropdown(self._SEL_DATA_TYPE)
-        await self._select_dropdown_option("theo phút")
+        """Called once before looping stations: select "theo phút" + TP. Hà Nội by index."""
+        logger.info("[PAGE] Pre-selecting data type: Dữ liệu theo phút (option #1)...")
+        await self._open_dropdown(self._SEL_DATA_TYPE, nth=0)
+        await self._select_dropdown_option_by_index(1)  # "Dữ liệu theo phút" = option 1
         await self._page.wait_for_timeout(500)
 
-        logger.info("[PAGE] Pre-selecting province: TP. Hà Nội...")
-        await self._open_dropdown(self._SEL_PROVINCE)
-        found = await self._select_dropdown_option("TP. Hà Nội")
-        if not found:
-            await self._select_dropdown_option("Hà Nội")
+        logger.info("[PAGE] Pre-selecting province: TP. Hà Nội (option #1)...")
+        await self._open_dropdown(self._SEL_PROVINCE, nth=1)
+        await self._select_dropdown_option_by_index(1)  # "TP. Hà Nội" = option 1
         await self._page.wait_for_timeout(1000)
 
     async def _select_station_and_date(
         self,
-        station_display_name: str,
+        station_index: int,
         from_date: str,
         to_date: str,
     ) -> None:
-        """Select station + set date range (province already pre-selected)."""
+        """Select station by dropdown index + set date range (province already pre-selected)."""
         frame = self._page.frame_locator("iframe")
 
-        # 1. Select station
-        logger.info(f"[PAGE] Selecting station: {station_display_name}...")
-        await self._open_dropdown(self._SEL_STATION)
-        found = await self._select_dropdown_option(station_display_name)
-        if not found:
-            logger.warning(
-                f"[PAGE] Station '{station_display_name}' not found in dropdown"
-            )
+        # 1. Open station dropdown and select by index
+        logger.info(f"[PAGE] Selecting station by index {station_index}...")
+        await self._open_dropdown(self._SEL_STATION, nth=2)
+        await self._select_dropdown_option_by_index(station_index)
         await self._page.wait_for_timeout(1000)
 
         # 2. Set date range
@@ -499,6 +466,7 @@ class EnvisoftClient:
         self,
         station_id: str,
         station_name: str,
+        station_index: int,
         from_date: str,
         to_date: str,
         output_dir: Path | None = None,
@@ -507,7 +475,8 @@ class EnvisoftClient:
 
         Args:
             station_id: Envisoft station ID from config.
-            station_name: aria-label from config for dropdown matching.
+            station_name: Station display name for logging.
+            station_index: 0-based index in the station dropdown.
             from_date: Start date YYYY-MM-DD.
             to_date: End date YYYY-MM-DD.
             output_dir: Directory to save the raw Excel.
@@ -519,7 +488,7 @@ class EnvisoftClient:
             output_dir = config.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        await self._select_station_and_date(station_name, from_date, to_date)
+        await self._select_station_and_date(station_index, from_date, to_date)
 
         excel_path = await self._export_single_station(output_dir)
         if excel_path is None or not excel_path.exists():
@@ -554,16 +523,18 @@ class EnvisoftClient:
         for idx, station in enumerate(stations, 1):
             station_id = station["station_id"]
             station_name = station["name"]
+            station_index = idx  # 1-based index matching dropdown order
 
             logger.info(
                 f"[{idx}/{len(stations)}] Exporting {station_name} "
-                f"({station_id}) from {from_date} to {to_date}..."
+                f"({station_id}) at index {station_index}, from {from_date} to {to_date}..."
             )
 
             try:
                 records = await self.export_station_data(
                     station_id=station_id,
                     station_name=station_name,
+                    station_index=station_index,
                     from_date=from_date,
                     to_date=to_date,
                     output_dir=output_dir,
