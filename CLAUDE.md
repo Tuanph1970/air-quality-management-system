@@ -51,17 +51,19 @@ Envisoft ────► station-excel-fetcher                            │
 | air-quality-service | 8004 | Redis only | AQI calculation, data fusion, Redis cache |
 | user-service | 8005 | user_db | Auth, JWT tokens, roles |
 | remote-sensing-service | 8006 | remote_sensing_db | Satellite data, Excel import |
-| station-service | 8007 | station_db | Official monitoring stations, ingestion |
-| wrf-service | 8009 | wrf_db | WRF weather model (sample-data mode by default) |
+| station-service | 8007 | station_db | Official monitoring stations, ingestion (container: 8008) |
+| wrf-service | 8009 | wrf_db | WRF weather model (sample-data mode by default, no gateway route) |
 
-### Ingestion Services (no REST API, continuous runners)
+### Ingestion Services (continuous runners, no REST API)
 
-| Service | Purpose |
-|---------|---------|
-| purpleair-ingestion-service (8008) | Polls PurpleAir cloud API → RabbitMQ |
-| purpleair-listener (8012) | Consumes PurpleAir events → MySQL (sensor_db) |
-| station-ingestion-service | Fetches from `admin-qttd.tedp.vn` → station_db |
-| station-excel-fetcher (8011) | Downloads Envisoft Excel → station_excel_fetcher_db |
+| Service | Host Port | Purpose |
+|---------|----------|---------|
+| purpleair-ingestion-service | 8008 | Polls PurpleAir cloud API → RabbitMQ (`sensor.events`) |
+| purpleair-listener | 8012 | Consumes RabbitMQ → writes to MySQL (sensor_db) |
+| station-ingestion-service | 8010 | Fetches from `admin-qttd.tedp.vn` → station_db (profile: `dev`) |
+| station-excel-fetcher | 8011 | Downloads Envisoft Excel files → station_excel_fetcher_db |
+
+> `station-ingestion-service` runs only with `--profile dev` (not started by default).
 
 ### Databases (created by `scripts/init-mysql.sql`)
 
