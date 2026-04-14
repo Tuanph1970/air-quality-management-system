@@ -205,6 +205,10 @@ class EnvisoftClient:
     _SEL_END_DATE     = '[placeholder="Ngày kết thúc"]'   # textbox: end date
     _SEL_EXPORT_BTN   = "button:has-text('XUẤT FILE')"   # button: XUẤT FILE
     _SEL_TABLE        = "table"           # data table
+    # Ant Design DatePicker calendar cells (always visible once picker is open)
+    _SEL_CALENDAR     = ".ant-picker-panel"        # calendar panel
+    _SEL_DATE_CELL    = ".ant-picker-cell"         # any date cell
+    _SEL_DATE_INPUT   = ".ant-picker-input input"  # date input fields inside picker
 
     def __init__(self):
         self._pw = None
@@ -406,6 +410,112 @@ class EnvisoftClient:
         await self._select_dropdown_option_by_index(1)  # "TP. Hà Nội" = option 1
         await self._page.wait_for_timeout(1000)
 
+    async def _set_ant_design_date_picker(
+        self,
+        picker_placeholder: str,
+        date_str: str,
+        frame,
+    ) -> None:
+        """Fill an Ant Design DatePicker by interacting with the calendar UI.
+
+        Ant Design DatePickers use an internal onChange handler — .fill() on the
+        visible input bypasses it and the picker never updates. Instead we:
+          1. Click the input to open the calendar panel
+          2. Click a specific date cell to confirm the selection (fires onChange)
+
+        The date_str is YYYY-MM-DD; the calendar panel shows month+year as its
+        title and day cells from the 1st to the last of that month.
+        """
+        from datetime import datetime
+
+        parsed = datetime.strptime(date_str, "%Y-%m-%d")
+        year, month, day = parsed.year, parsed.month, parsed.day
+
+        # Open the picker
+        input_el = frame.locator(f'[placeholder="{picker_placeholder}"]')
+        await input_el.click()
+        await self._page.wait_for_timeout(800)
+
+        # Loop until the calendar shows the target month
+        for _ in range(13):  # max 12 month-change clicks
+            title_el = frame.locator(".ant-picker-header")
+            title_text = await title_el.inner_text()
+            logger.info(f"[CALENDAR] Panel title: {title_text}")
+
+            # Check if the calendar already shows the correct month+year
+            # Ant Design header format is e.g. "Tháng 4 2026" or "April 2026"
+            if str(month) in title_text and str(year) in title_text:
+                logger.info(f"[CALENDAR] Month/year matches — selecting day {day}")
+                break
+
+            # Navigate to the correct month by clicking prev/next arrows
+            # Try both button directions to find the right one
+            next_btn = frame.locator(".ant-picker-next-icon").first
+            prev_btn = frame.locator(".ant-picker-prev-icon").first
+
+            current_month_text = title_text.lower()
+
+            # Determine direction: if target month is ahead, click next; else prev
+            # Parse current month from title
+            if any(m in current_month_text for m in ["january", "february", "march",
+                                                       "janvier", "febrero", "märz",
+                                                       "tháng 1", "tháng 2", "tháng 3",
+                                                       "1月", "jan"]):
+                cur_m = 1
+            elif any(m in current_month_text for m in ["april", "avril", "abril", "apr",
+                                                          "tháng 4", "tháng 5", "tháng 6",
+                                                          "4月", "may", "mai"]):
+                cur_m = 4
+            elif any(m in current_month_text for m in ["july", "juillet", "julio", "jul",
+                                                         "tháng 7", "tháng 8", "tháng 9",
+                                                         "7月"]):
+                cur_m = 7
+            elif any(m in current_month_text for m in ["october", "octobre", "oktober",
+                                                           "tháng 10", "tháng 11", "tháng 12",
+                                                           "10月", "11月", "12月"]):
+                cur_m = 10
+            else:
+                # Try to parse the month number from title
+                import re
+                m_match = re.search(r"(\d{1,2})[/.](\d{4})", title_text)
+                if m_match:
+                    cur_m = int(m_match.group(1))
+                else:
+                    # Fallback: just try next
+                    cur_m = month + 1  # force a click
+
+            # Click next or prev depending on whether target month is ahead
+            if month > cur_m:
+                await next_btn.click()
+            else:
+                await prev_btn.click()
+
+            await self._page.wait_for_timeout(500)
+        else:
+            logger.warning(f"[CALENDAR] Could not navigate to {month}/{year} in 12 clicks")
+
+        # Click the target day cell
+        # Ant Design cells show the day number as aria-label like "2026-04-13"
+        target_label = f"{year}-{month:02d}-{day:02d}"
+        day_cell = frame.locator(f'.ant-picker-cell[aria-label="{target_label}"]')
+        if await day_cell.count() > 0:
+            await day_cell.click()
+            logger.info(f"[CALENDAR] Selected {target_label}")
+        else:
+            # Fallback: click by inner text matching the day number
+            all_cells = frame.locator(".ant-picker-content td")
+            for cell in all_cells.all():
+                text = await cell.inner_text()
+                if text.strip() == str(day):
+                    await cell.click()
+                    logger.info(f"[CALENDAR] Selected day {day} by text fallback")
+                    break
+            else:
+                logger.warning(f"[CALENDAR] Day {day} cell not found — trying fill() fallback")
+                await input_el.fill(date_str)
+
+        await self._page.wait_for_timeout(500)
+
     async def _select_station_and_date(
         self,
         station_index: int,
@@ -421,22 +531,15 @@ class EnvisoftClient:
         await self._select_dropdown_option_by_index(station_index)
         await self._page.wait_for_timeout(1000)
 
-        # 2. Set date range
+        # 2. Set date range using proper calendar UI interaction
         logger.info(f"[PAGE] Setting date range: {from_date} → {to_date}...")
-        start_el = frame.locator(self._SEL_START_DATE)
-        end_el = frame.locator(self._SEL_END_DATE)
-        await start_el.click()
-        await start_el.fill("")
-        await start_el.fill(from_date)
-        await self._page.wait_for_timeout(300)
-        await end_el.click()
-        await end_el.fill("")
-        await end_el.fill(to_date)
-        await self._page.wait_for_timeout(300)
+        await self._set_ant_design_date_picker("Ngày bắt đầu", from_date, frame)
+        await self._set_ant_design_date_picker("Ngày kết thúc", to_date, frame)
+        await self._page.wait_for_timeout(1000)
 
         # 3. Wait for data table to load
         logger.info("[PAGE] Waiting for data table to load...")
-        loaded = await self._wait_for_table_load(timeout=15000)
+        loaded = await self._wait_for_table_load(timeout=45000)
         if loaded:
             rows = await frame.locator("table tbody tr").all()
             logger.info(f"[PAGE] Data table loaded with {len(rows)} rows")

@@ -38,15 +38,22 @@ async def lifespan(app: FastAPI):
 
     logger.info(f"Starting {config.SERVICE_NAME}...")
 
-    # Create DB table if not exists
-    try:
-        from .infrastructure.persistence.database import engine
-        from .infrastructure.persistence.models import Base
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("[STARTUP] DB tables ensured")
-    except Exception as exc:
-        logger.warning(f"[STARTUP] Table creation failed (may already exist): {exc}")
+    # Create DB table if not exists (retry 3 times with backoff)
+    for attempt in range(1, 4):
+        try:
+            from .infrastructure.persistence.database import engine
+            from .infrastructure.persistence.models import Base
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("[STARTUP] DB tables ensured")
+            break
+        except Exception as exc:
+            logger.warning(f"[STARTUP] Table creation attempt {attempt} failed: {exc}")
+            if attempt < 3:
+                import asyncio
+                await asyncio.sleep(2)
+            else:
+                logger.error("[STARTUP] Table creation failed after 3 attempts — DB may be unavailable")
 
     # Run startup fetch if configured
     if config.FETCH_ON_STARTUP:
