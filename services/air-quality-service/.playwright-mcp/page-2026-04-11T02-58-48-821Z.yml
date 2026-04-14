@@ -1,0 +1,6 @@
+- generic [active] [ref=e1]:
+  - iframe [ref=e2]:
+    - generic [ref=f6e2]: Loading...
+  - generic [ref=e4]:
+    - text: Đang xử lý ...
+    - img [ref=e5]

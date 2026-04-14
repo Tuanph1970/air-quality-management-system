@@ -1,0 +1,610 @@
+- generic [ref=e1]:
+  - banner: 
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - list [ref=e5]:
+        - listitem [ref=e6]:
+          - img [ref=e7]
+        - listitem [ref=e8]:
+          - link "Trang chủ" [ref=e9] [cursor=pointer]:
+            - /url: /eos/dashboard/index?qttd=True
+            - img [ref=e10]
+            - text: Trang chủ
+        - listitem [ref=e11]:
+          - link "Giám sát trực tuyến" [ref=e12] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e13]
+            - text: Giám sát trực tuyến
+        - listitem [ref=e14]:
+          - link "Tra cứu dữ liệu" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e16]
+            - text: Tra cứu dữ liệu
+        - listitem [ref=e17]:
+          - link "Báo cáo" [ref=e18] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e19]
+            - text: Báo cáo
+          - text:   
+        - listitem [ref=e20]:
+          - link "Thống kê" [ref=e21] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e22]
+            - text: Thống kê
+          - text:    
+        - listitem [ref=e23]:
+          - text:   
+          - link "Cài đặt" [ref=e24] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e25]
+            - text: Cài đặt
+    - generic [ref=e26]:
+      - navigation [ref=e28]:
+        - generic [ref=e30]:
+          - heading "BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG" [level=5] [ref=e31]
+          - heading "PHẦN MỀM QUẢN LÝ DỮ LIỆU QUAN TRẮC" [level=5] [ref=e32]
+        - list [ref=e33]:
+          - listitem [ref=e34]:
+            - link " Định kỳ" [expanded] [ref=e35] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qtdk=True
+              - generic [ref=e36]: 
+              - strong [ref=e38]: Định kỳ
+          - listitem [ref=e39]:
+            - link " Tự động" [expanded] [ref=e40] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qttd=True
+              - generic [ref=e41]: 
+              - strong [ref=e43]: Tự động
+          - listitem [ref=e44]:
+            - link " Viễn thám" [expanded] [ref=e45] [cursor=pointer]:
+              - /url: "?token=69b8c69a673da43b54870064"
+              - generic [ref=e46]: 
+              - strong [ref=e48]: Viễn thám
+          - listitem [ref=e49]:
+            - link " Thông báo" [ref=e50] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e51]:
+                - generic [ref=e52]: 
+                - generic [ref=e53]: Thông báo
+            - text: 
+          - listitem
+          - listitem [ref=e54]:
+            - link " None" [expanded] [ref=e55] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e56]: 
+              - strong [ref=e58]:
+                - generic [ref=e59]: None
+      - generic [ref=e60]:
+        - generic [ref=e62]:
+          - heading "DỮ LIỆU TRUNG BÌNH THEO THỜI GIAN" [level=2] [ref=e63]
+          - list [ref=e64]:
+            - listitem [ref=e65]: Trang chủ
+            - listitem [ref=e66]: / Tra cứu dữ liệu
+            - listitem [ref=e67]:
+              - text: /
+              - strong [ref=e68]: Dữ liệu trung bình theo thời gian
+        - iframe [active] [ref=e73]:
+          - generic [ref=f8e1]:
+            - main [ref=f8e4]:
+              - generic [ref=f8e5]:
+                - generic [ref=f8e7] [cursor=pointer]:
+                  - generic [ref=f8e9]:
+                    - combobox [ref=f8e11]
+                    - generic "- Dữ liệu theo phút -" [ref=f8e12]
+                  - generic:
+                    - img:
+                      - img
+                - generic [ref=f8e14] [cursor=pointer]:
+                  - generic [ref=f8e16]:
+                    - combobox [ref=f8e18]
+                    - generic "TP. Hà Nội" [ref=f8e19]
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f8e21]:
+                    - img [ref=f8e22]
+                - generic [ref=f8e25] [cursor=pointer]:
+                  - generic [ref=f8e27]:
+                    - combobox [ref=f8e29]
+                    - 'generic "Hà Nội: 556 Nguyễn Văn Cừ (KK)" [ref=f8e30]'
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f8e32]:
+                    - img [ref=f8e33]
+                - generic [ref=f8e36] [cursor=pointer]:
+                  - generic [ref=f8e38]:
+                    - combobox [ref=f8e40]
+                    - generic: "- Dữ liệu nguyên gốc -"
+                  - generic:
+                    - img:
+                      - img
+                - generic [ref=f8e42] [cursor=pointer]:
+                  - generic [ref=f8e44]:
+                    - combobox [ref=f8e46]
+                    - generic "Không khí (KK)" [ref=f8e47]
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f8e49]:
+                    - img [ref=f8e50]
+                - generic [ref=f8e53]:
+                  - textbox "Start date" [ref=f8e55]: 2026-04-01
+                  - generic "to" [ref=f8e57]:
+                    - img "swap-right" [ref=f8e58]:
+                      - img [ref=f8e59]
+                  - textbox "End date" [ref=f8e62]: 2026-04-02
+                  - generic:
+                    - img "calendar":
+                      - img
+                  - button "close-circle" [ref=f8e63] [cursor=pointer]:
+                    - img "close-circle" [ref=f8e64]:
+                      - img [ref=f8e65]
+                - generic [ref=f8e68] [cursor=pointer]:
+                  - checkbox "So sánh dữ liệu vượt quy chuẩn" [ref=f8e70]
+                  - generic [ref=f8e72]: So sánh dữ liệu vượt quy chuẩn
+                - generic [ref=f8e74]:
+                  - generic [ref=f8e77]: Đạt QCVN
+                  - generic [ref=f8e80]: Vượt QCVN
+                - button "XUẤT FILE" [active] [ref=f8e83] [cursor=pointer]:
+                  - generic [ref=f8e84]: XUẤT FILE
+              - button "collapsed Chọn thông số" [ref=f8e87] [cursor=pointer]:
+                - img "collapsed" [ref=f8e89]:
+                  - img [ref=f8e90]
+                - generic [ref=f8e92]: Chọn thông số
+              - generic [ref=f8e93]:
+                - tablist [ref=f8e94]:
+                  - generic [ref=f8e96]:
+                    - tab "Dữ liệu" [selected] [ref=f8e98] [cursor=pointer]
+                    - tab "Min/Max/Trung bình" [ref=f8e100] [cursor=pointer]
+                    - tab "Biểu đồ" [ref=f8e102] [cursor=pointer]
+                - tabpanel "Dữ liệu" [ref=f8e105]:
+                  - generic [ref=f8e110]:
+                    - table [ref=f8e114]:
+                      - rowgroup [ref=f8e117]:
+                        - 'row "TT THỜI GIAN ĐO NO (µg/Nm3) Cmin: - Cmax: - O3 (µg/Nm3) Cmin: - Cmax: - Radiation (W/m2) Cmin: - Cmax: - CO (µg/Nm3) Cmin: - Cmax: - WD (degree) Cmin: - Cmax: - NO2 (µg/Nm3) Cmin: - Cmax: 200 P (hPa) Cmin: - Cmax: - PM205 (µg/Nm3) Cmin: - Cmax: 50 Temp (oC) Cmin: - Cmax: - RH (%) Cmin: - Cmax: - NOx (µg/Nm3) Cmin: - Cmax: - SO2 (µg/Nm3) Cmin: - Cmax: 350 PM10 (µg/Nm3) Cmin: - Cmax: 100" [ref=f8e118]':
+                          - columnheader "TT" [ref=f8e119]
+                          - columnheader "THỜI GIAN ĐO" [ref=f8e120]
+                          - 'columnheader "NO (µg/Nm3) Cmin: - Cmax: -" [ref=f8e121]':
+                            - generic [ref=f8e122]:
+                              - generic [ref=f8e123]: NO (µg/Nm3)
+                              - generic [ref=f8e124]:
+                                - generic [ref=f8e125]: "Cmin: -"
+                                - generic [ref=f8e126]: "Cmax: -"
+                          - 'columnheader "O3 (µg/Nm3) Cmin: - Cmax: -" [ref=f8e127]':
+                            - generic [ref=f8e128]:
+                              - generic [ref=f8e129]: O3 (µg/Nm3)
+                              - generic [ref=f8e130]:
+                                - generic [ref=f8e131]: "Cmin: -"
+                                - generic [ref=f8e132]: "Cmax: -"
+                          - 'columnheader "Radiation (W/m2) Cmin: - Cmax: -" [ref=f8e133]':
+                            - generic [ref=f8e134]:
+                              - generic [ref=f8e135]: Radiation (W/m2)
+                              - generic [ref=f8e136]:
+                                - generic [ref=f8e137]: "Cmin: -"
+                                - generic [ref=f8e138]: "Cmax: -"
+                          - 'columnheader "CO (µg/Nm3) Cmin: - Cmax: -" [ref=f8e139]':
+                            - generic [ref=f8e140]:
+                              - generic [ref=f8e141]: CO (µg/Nm3)
+                              - generic [ref=f8e142]:
+                                - generic [ref=f8e143]: "Cmin: -"
+                                - generic [ref=f8e144]: "Cmax: -"
+                          - 'columnheader "WD (degree) Cmin: - Cmax: -" [ref=f8e145]':
+                            - generic [ref=f8e146]:
+                              - generic [ref=f8e147]: WD (degree)
+                              - generic [ref=f8e148]:
+                                - generic [ref=f8e149]: "Cmin: -"
+                                - generic [ref=f8e150]: "Cmax: -"
+                          - 'columnheader "NO2 (µg/Nm3) Cmin: - Cmax: 200" [ref=f8e151]':
+                            - generic [ref=f8e152]:
+                              - generic [ref=f8e153]: NO2 (µg/Nm3)
+                              - generic [ref=f8e154]:
+                                - generic [ref=f8e155]: "Cmin: -"
+                                - generic [ref=f8e156]: "Cmax: 200"
+                          - 'columnheader "P (hPa) Cmin: - Cmax: -" [ref=f8e157]':
+                            - generic [ref=f8e158]:
+                              - generic [ref=f8e159]: P (hPa)
+                              - generic [ref=f8e160]:
+                                - generic [ref=f8e161]: "Cmin: -"
+                                - generic [ref=f8e162]: "Cmax: -"
+                          - 'columnheader "PM205 (µg/Nm3) Cmin: - Cmax: 50" [ref=f8e163]':
+                            - generic [ref=f8e164]:
+                              - generic [ref=f8e165]: PM205 (µg/Nm3)
+                              - generic [ref=f8e166]:
+                                - generic [ref=f8e167]: "Cmin: -"
+                                - generic [ref=f8e168]: "Cmax: 50"
+                          - 'columnheader "Temp (oC) Cmin: - Cmax: -" [ref=f8e169]':
+                            - generic [ref=f8e170]:
+                              - generic [ref=f8e171]: Temp (oC)
+                              - generic [ref=f8e172]:
+                                - generic [ref=f8e173]: "Cmin: -"
+                                - generic [ref=f8e174]: "Cmax: -"
+                          - 'columnheader "RH (%) Cmin: - Cmax: -" [ref=f8e175]':
+                            - generic [ref=f8e176]:
+                              - generic [ref=f8e177]: RH (%)
+                              - generic [ref=f8e178]:
+                                - generic [ref=f8e179]: "Cmin: -"
+                                - generic [ref=f8e180]: "Cmax: -"
+                          - 'columnheader "NOx (µg/Nm3) Cmin: - Cmax: -" [ref=f8e181]':
+                            - generic [ref=f8e182]:
+                              - generic [ref=f8e183]: NOx (µg/Nm3)
+                              - generic [ref=f8e184]:
+                                - generic [ref=f8e185]: "Cmin: -"
+                                - generic [ref=f8e186]: "Cmax: -"
+                          - 'columnheader "SO2 (µg/Nm3) Cmin: - Cmax: 350" [ref=f8e187]':
+                            - generic [ref=f8e188]:
+                              - generic [ref=f8e189]: SO2 (µg/Nm3)
+                              - generic [ref=f8e190]:
+                                - generic [ref=f8e191]: "Cmin: -"
+                                - generic [ref=f8e192]: "Cmax: 350"
+                          - 'columnheader "PM10 (µg/Nm3) Cmin: - Cmax: 100" [ref=f8e193]':
+                            - generic [ref=f8e194]:
+                              - generic [ref=f8e195]: PM10 (µg/Nm3)
+                              - generic [ref=f8e196]:
+                                - generic [ref=f8e197]: "Cmin: -"
+                                - generic [ref=f8e198]: "Cmax: 100"
+                      - rowgroup [ref=f8e199]:
+                        - row "1 2026-04-02 23:55:00 0.00 65.07 0.00 0.00 132.36 0.00 0.00 42.69 26.70 90.02 0.00 2.10 59.49" [ref=f8e200]:
+                          - cell "1" [ref=f8e201]
+                          - cell "2026-04-02 23:55:00" [ref=f8e202]
+                          - cell "0.00" [ref=f8e203]
+                          - cell "65.07" [ref=f8e204]
+                          - cell "0.00" [ref=f8e205]
+                          - cell "0.00" [ref=f8e206]
+                          - cell "132.36" [ref=f8e207]
+                          - cell "0.00" [ref=f8e208]
+                          - cell "0.00" [ref=f8e209]
+                          - cell "42.69" [ref=f8e210]
+                          - cell "26.70" [ref=f8e211]
+                          - cell "90.02" [ref=f8e212]
+                          - cell "0.00" [ref=f8e213]
+                          - cell "2.10" [ref=f8e214]
+                          - cell "59.49" [ref=f8e215]
+                        - row "2 2026-04-02 23:50:00 0.00 77.42 0.00 0.00 159.14 0.00 0.00 42.71 26.62 90.14 0.00 2.36 59.86" [ref=f8e216]:
+                          - cell "2" [ref=f8e217]
+                          - cell "2026-04-02 23:50:00" [ref=f8e218]
+                          - cell "0.00" [ref=f8e219]
+                          - cell "77.42" [ref=f8e220]
+                          - cell "0.00" [ref=f8e221]
+                          - cell "0.00" [ref=f8e222]
+                          - cell "159.14" [ref=f8e223]
+                          - cell "0.00" [ref=f8e224]
+                          - cell "0.00" [ref=f8e225]
+                          - cell "42.71" [ref=f8e226]
+                          - cell "26.62" [ref=f8e227]
+                          - cell "90.14" [ref=f8e228]
+                          - cell "0.00" [ref=f8e229]
+                          - cell "2.36" [ref=f8e230]
+                          - cell "59.86" [ref=f8e231]
+                        - row "3 2026-04-02 23:45:00 0.00 80.75 0.00 0.00 139.13 0.00 0.00 43.40 26.51 90.07 0.00 2.36 60.38" [ref=f8e232]:
+                          - cell "3" [ref=f8e233]
+                          - cell "2026-04-02 23:45:00" [ref=f8e234]
+                          - cell "0.00" [ref=f8e235]
+                          - cell "80.75" [ref=f8e236]
+                          - cell "0.00" [ref=f8e237]
+                          - cell "0.00" [ref=f8e238]
+                          - cell "139.13" [ref=f8e239]
+                          - cell "0.00" [ref=f8e240]
+                          - cell "0.00" [ref=f8e241]
+                          - cell "43.40" [ref=f8e242]
+                          - cell "26.51" [ref=f8e243]
+                          - cell "90.07" [ref=f8e244]
+                          - cell "0.00" [ref=f8e245]
+                          - cell "2.36" [ref=f8e246]
+                          - cell "60.38" [ref=f8e247]
+                        - row "4 2026-04-02 23:40:00 0.00 77.62 0.00 0.00 101.65 0.00 0.00 42.18 26.62 89.98 0.00 1.83 61.41" [ref=f8e248]:
+                          - cell "4" [ref=f8e249]
+                          - cell "2026-04-02 23:40:00" [ref=f8e250]
+                          - cell "0.00" [ref=f8e251]
+                          - cell "77.62" [ref=f8e252]
+                          - cell "0.00" [ref=f8e253]
+                          - cell "0.00" [ref=f8e254]
+                          - cell "101.65" [ref=f8e255]
+                          - cell "0.00" [ref=f8e256]
+                          - cell "0.00" [ref=f8e257]
+                          - cell "42.18" [ref=f8e258]
+                          - cell "26.62" [ref=f8e259]
+                          - cell "89.98" [ref=f8e260]
+                          - cell "0.00" [ref=f8e261]
+                          - cell "1.83" [ref=f8e262]
+                          - cell "61.41" [ref=f8e263]
+                        - row "5 2026-04-02 23:35:00 0.00 53.51 0.00 0.00 148.02 0.00 0.00 41.13 26.64 89.72 0.00 2.10 62.09" [ref=f8e264]:
+                          - cell "5" [ref=f8e265]
+                          - cell "2026-04-02 23:35:00" [ref=f8e266]
+                          - cell "0.00" [ref=f8e267]
+                          - cell "53.51" [ref=f8e268]
+                          - cell "0.00" [ref=f8e269]
+                          - cell "0.00" [ref=f8e270]
+                          - cell "148.02" [ref=f8e271]
+                          - cell "0.00" [ref=f8e272]
+                          - cell "0.00" [ref=f8e273]
+                          - cell "41.13" [ref=f8e274]
+                          - cell "26.64" [ref=f8e275]
+                          - cell "89.72" [ref=f8e276]
+                          - cell "0.00" [ref=f8e277]
+                          - cell "2.10" [ref=f8e278]
+                          - cell "62.09" [ref=f8e279]
+                        - row "6 2026-04-02 23:30:00 0.00 52.72 0.00 0.00 150.68 0.00 0.00 42.23 26.54 89.82 0.00 1.31 63.22" [ref=f8e280]:
+                          - cell "6" [ref=f8e281]
+                          - cell "2026-04-02 23:30:00" [ref=f8e282]
+                          - cell "0.00" [ref=f8e283]
+                          - cell "52.72" [ref=f8e284]
+                          - cell "0.00" [ref=f8e285]
+                          - cell "0.00" [ref=f8e286]
+                          - cell "150.68" [ref=f8e287]
+                          - cell "0.00" [ref=f8e288]
+                          - cell "0.00" [ref=f8e289]
+                          - cell "42.23" [ref=f8e290]
+                          - cell "26.54" [ref=f8e291]
+                          - cell "89.82" [ref=f8e292]
+                          - cell "0.00" [ref=f8e293]
+                          - cell "1.31" [ref=f8e294]
+                          - cell "63.22" [ref=f8e295]
+                        - row "7 2026-04-02 23:25:00 0.00 53.51 0.00 0.00 158.72 0.00 0.00 42.16 26.60 89.76 0.00 1.05 65.00" [ref=f8e296]:
+                          - cell "7" [ref=f8e297]
+                          - cell "2026-04-02 23:25:00" [ref=f8e298]
+                          - cell "0.00" [ref=f8e299]
+                          - cell "53.51" [ref=f8e300]
+                          - cell "0.00" [ref=f8e301]
+                          - cell "0.00" [ref=f8e302]
+                          - cell "158.72" [ref=f8e303]
+                          - cell "0.00" [ref=f8e304]
+                          - cell "0.00" [ref=f8e305]
+                          - cell "42.16" [ref=f8e306]
+                          - cell "26.60" [ref=f8e307]
+                          - cell "89.76" [ref=f8e308]
+                          - cell "0.00" [ref=f8e309]
+                          - cell "1.05" [ref=f8e310]
+                          - cell "65.00" [ref=f8e311]
+                        - row "8 2026-04-02 23:20:00 0.00 51.94 0.00 0.00 106.39 0.00 0.00 42.34 26.50 89.69 0.00 2.10 65.40" [ref=f8e312]:
+                          - cell "8" [ref=f8e313]
+                          - cell "2026-04-02 23:20:00" [ref=f8e314]
+                          - cell "0.00" [ref=f8e315]
+                          - cell "51.94" [ref=f8e316]
+                          - cell "0.00" [ref=f8e317]
+                          - cell "0.00" [ref=f8e318]
+                          - cell "106.39" [ref=f8e319]
+                          - cell "0.00" [ref=f8e320]
+                          - cell "0.00" [ref=f8e321]
+                          - cell "42.34" [ref=f8e322]
+                          - cell "26.50" [ref=f8e323]
+                          - cell "89.69" [ref=f8e324]
+                          - cell "0.00" [ref=f8e325]
+                          - cell "2.10" [ref=f8e326]
+                          - cell "65.40" [ref=f8e327]
+                        - row "9 2026-04-02 23:15:00 0.00 51.94 0.00 0.00 175.78 0.00 0.00 43.05 26.63 89.39 0.00 1.57 65.42" [ref=f8e328]:
+                          - cell "9" [ref=f8e329]
+                          - cell "2026-04-02 23:15:00" [ref=f8e330]
+                          - cell "0.00" [ref=f8e331]
+                          - cell "51.94" [ref=f8e332]
+                          - cell "0.00" [ref=f8e333]
+                          - cell "0.00" [ref=f8e334]
+                          - cell "175.78" [ref=f8e335]
+                          - cell "0.00" [ref=f8e336]
+                          - cell "0.00" [ref=f8e337]
+                          - cell "43.05" [ref=f8e338]
+                          - cell "26.63" [ref=f8e339]
+                          - cell "89.39" [ref=f8e340]
+                          - cell "0.00" [ref=f8e341]
+                          - cell "1.57" [ref=f8e342]
+                          - cell "65.42" [ref=f8e343]
+                        - row "10 2026-04-02 23:10:00 0.00 51.94 0.00 0.00 169.87 0.00 0.00 44.08 26.56 89.21 0.00 1.83 65.78" [ref=f8e344]:
+                          - cell "10" [ref=f8e345]
+                          - cell "2026-04-02 23:10:00" [ref=f8e346]
+                          - cell "0.00" [ref=f8e347]
+                          - cell "51.94" [ref=f8e348]
+                          - cell "0.00" [ref=f8e349]
+                          - cell "0.00" [ref=f8e350]
+                          - cell "169.87" [ref=f8e351]
+                          - cell "0.00" [ref=f8e352]
+                          - cell "0.00" [ref=f8e353]
+                          - cell "44.08" [ref=f8e354]
+                          - cell "26.56" [ref=f8e355]
+                          - cell "89.21" [ref=f8e356]
+                          - cell "0.00" [ref=f8e357]
+                          - cell "1.83" [ref=f8e358]
+                          - cell "65.78" [ref=f8e359]
+                        - row "11 2026-04-02 23:05:00 0.00 49.59 0.00 0.00 93.11 0.00 0.00 43.93 26.74 89.22 0.00 1.31 65.55" [ref=f8e360]:
+                          - cell "11" [ref=f8e361]
+                          - cell "2026-04-02 23:05:00" [ref=f8e362]
+                          - cell "0.00" [ref=f8e363]
+                          - cell "49.59" [ref=f8e364]
+                          - cell "0.00" [ref=f8e365]
+                          - cell "0.00" [ref=f8e366]
+                          - cell "93.11" [ref=f8e367]
+                          - cell "0.00" [ref=f8e368]
+                          - cell "0.00" [ref=f8e369]
+                          - cell "43.93" [ref=f8e370]
+                          - cell "26.74" [ref=f8e371]
+                          - cell "89.22" [ref=f8e372]
+                          - cell "0.00" [ref=f8e373]
+                          - cell "1.31" [ref=f8e374]
+                          - cell "65.55" [ref=f8e375]
+                        - row "12 2026-04-02 23:00:00 0.00 48.80 0.00 0.00 120.34 0.00 0.00 42.94 26.67 89.36 0.00 2.10 64.94" [ref=f8e376]:
+                          - cell "12" [ref=f8e377]
+                          - cell "2026-04-02 23:00:00" [ref=f8e378]
+                          - cell "0.00" [ref=f8e379]
+                          - cell "48.80" [ref=f8e380]
+                          - cell "0.00" [ref=f8e381]
+                          - cell "0.00" [ref=f8e382]
+                          - cell "120.34" [ref=f8e383]
+                          - cell "0.00" [ref=f8e384]
+                          - cell "0.00" [ref=f8e385]
+                          - cell "42.94" [ref=f8e386]
+                          - cell "26.67" [ref=f8e387]
+                          - cell "89.36" [ref=f8e388]
+                          - cell "0.00" [ref=f8e389]
+                          - cell "2.10" [ref=f8e390]
+                          - cell "64.94" [ref=f8e391]
+                        - row "13 2026-04-02 22:55:00 0.00 40.38 0.00 0.00 153.07 0.00 0.00 42.46 26.76 89.62 0.00 1.31 64.54" [ref=f8e392]:
+                          - cell "13" [ref=f8e393]
+                          - cell "2026-04-02 22:55:00" [ref=f8e394]
+                          - cell "0.00" [ref=f8e395]
+                          - cell "40.38" [ref=f8e396]
+                          - cell "0.00" [ref=f8e397]
+                          - cell "0.00" [ref=f8e398]
+                          - cell "153.07" [ref=f8e399]
+                          - cell "0.00" [ref=f8e400]
+                          - cell "0.00" [ref=f8e401]
+                          - cell "42.46" [ref=f8e402]
+                          - cell "26.76" [ref=f8e403]
+                          - cell "89.62" [ref=f8e404]
+                          - cell "0.00" [ref=f8e405]
+                          - cell "1.31" [ref=f8e406]
+                          - cell "64.54" [ref=f8e407]
+                        - row "14 2026-04-02 22:50:00 0.00 33.52 0.00 0.00 101.07 0.00 0.00 42.94 26.50 89.56 0.00 2.10 63.68" [ref=f8e408]:
+                          - cell "14" [ref=f8e409]
+                          - cell "2026-04-02 22:50:00" [ref=f8e410]
+                          - cell "0.00" [ref=f8e411]
+                          - cell "33.52" [ref=f8e412]
+                          - cell "0.00" [ref=f8e413]
+                          - cell "0.00" [ref=f8e414]
+                          - cell "101.07" [ref=f8e415]
+                          - cell "0.00" [ref=f8e416]
+                          - cell "0.00" [ref=f8e417]
+                          - cell "42.94" [ref=f8e418]
+                          - cell "26.50" [ref=f8e419]
+                          - cell "89.56" [ref=f8e420]
+                          - cell "0.00" [ref=f8e421]
+                          - cell "2.10" [ref=f8e422]
+                          - cell "63.68" [ref=f8e423]
+                        - row "15 2026-04-02 22:45:00 0.00 29.60 0.00 0.00 162.88 0.00 0.00 43.31 26.49 89.45 0.00 1.05 64.18" [ref=f8e424]:
+                          - cell "15" [ref=f8e425]
+                          - cell "2026-04-02 22:45:00" [ref=f8e426]
+                          - cell "0.00" [ref=f8e427]
+                          - cell "29.60" [ref=f8e428]
+                          - cell "0.00" [ref=f8e429]
+                          - cell "0.00" [ref=f8e430]
+                          - cell "162.88" [ref=f8e431]
+                          - cell "0.00" [ref=f8e432]
+                          - cell "0.00" [ref=f8e433]
+                          - cell "43.31" [ref=f8e434]
+                          - cell "26.49" [ref=f8e435]
+                          - cell "89.45" [ref=f8e436]
+                          - cell "0.00" [ref=f8e437]
+                          - cell "1.05" [ref=f8e438]
+                          - cell "64.18" [ref=f8e439]
+                        - row "16 2026-04-02 22:40:00 0.00 27.44 0.00 0.00 160.71 0.00 0.00 43.03 26.52 89.42 0.00 2.62 64.38" [ref=f8e440]:
+                          - cell "16" [ref=f8e441]
+                          - cell "2026-04-02 22:40:00" [ref=f8e442]
+                          - cell "0.00" [ref=f8e443]
+                          - cell "27.44" [ref=f8e444]
+                          - cell "0.00" [ref=f8e445]
+                          - cell "0.00" [ref=f8e446]
+                          - cell "160.71" [ref=f8e447]
+                          - cell "0.00" [ref=f8e448]
+                          - cell "0.00" [ref=f8e449]
+                          - cell "43.03" [ref=f8e450]
+                          - cell "26.52" [ref=f8e451]
+                          - cell "89.42" [ref=f8e452]
+                          - cell "0.00" [ref=f8e453]
+                          - cell "2.62" [ref=f8e454]
+                          - cell "64.38" [ref=f8e455]
+                        - row "17 2026-04-02 22:35:00 0.00 28.22 0.00 0.00 171.71 0.00 0.00 43.47 26.57 89.10 0.00 3.41 64.41" [ref=f8e456]:
+                          - cell "17" [ref=f8e457]
+                          - cell "2026-04-02 22:35:00" [ref=f8e458]
+                          - cell "0.00" [ref=f8e459]
+                          - cell "28.22" [ref=f8e460]
+                          - cell "0.00" [ref=f8e461]
+                          - cell "0.00" [ref=f8e462]
+                          - cell "171.71" [ref=f8e463]
+                          - cell "0.00" [ref=f8e464]
+                          - cell "0.00" [ref=f8e465]
+                          - cell "43.47" [ref=f8e466]
+                          - cell "26.57" [ref=f8e467]
+                          - cell "89.10" [ref=f8e468]
+                          - cell "0.00" [ref=f8e469]
+                          - cell "3.41" [ref=f8e470]
+                          - cell "64.41" [ref=f8e471]
+                        - row "18 2026-04-02 22:30:00 0.00 23.72 0.00 0.00 144.17 0.00 0.00 43.28 26.65 89.02 0.00 2.62 65.67" [ref=f8e472]:
+                          - cell "18" [ref=f8e473]
+                          - cell "2026-04-02 22:30:00" [ref=f8e474]
+                          - cell "0.00" [ref=f8e475]
+                          - cell "23.72" [ref=f8e476]
+                          - cell "0.00" [ref=f8e477]
+                          - cell "0.00" [ref=f8e478]
+                          - cell "144.17" [ref=f8e479]
+                          - cell "0.00" [ref=f8e480]
+                          - cell "0.00" [ref=f8e481]
+                          - cell "43.28" [ref=f8e482]
+                          - cell "26.65" [ref=f8e483]
+                          - cell "89.02" [ref=f8e484]
+                          - cell "0.00" [ref=f8e485]
+                          - cell "2.62" [ref=f8e486]
+                          - cell "65.67" [ref=f8e487]
+                        - row "19 2026-04-02 22:25:00 0.00 27.64 0.00 0.00 139.51 0.00 0.00 43.34 26.79 89.00 0.00 2.88 66.55" [ref=f8e488]:
+                          - cell "19" [ref=f8e489]
+                          - cell "2026-04-02 22:25:00" [ref=f8e490]
+                          - cell "0.00" [ref=f8e491]
+                          - cell "27.64" [ref=f8e492]
+                          - cell "0.00" [ref=f8e493]
+                          - cell "0.00" [ref=f8e494]
+                          - cell "139.51" [ref=f8e495]
+                          - cell "0.00" [ref=f8e496]
+                          - cell "0.00" [ref=f8e497]
+                          - cell "43.34" [ref=f8e498]
+                          - cell "26.79" [ref=f8e499]
+                          - cell "89.00" [ref=f8e500]
+                          - cell "0.00" [ref=f8e501]
+                          - cell "2.88" [ref=f8e502]
+                          - cell "66.55" [ref=f8e503]
+                        - row "20 2026-04-02 22:20:00 0.00 26.85 0.00 0.00 152.07 0.00 0.00 43.60 26.62 88.87 0.00 2.62 66.20" [ref=f8e504]:
+                          - cell "20" [ref=f8e505]
+                          - cell "2026-04-02 22:20:00" [ref=f8e506]
+                          - cell "0.00" [ref=f8e507]
+                          - cell "26.85" [ref=f8e508]
+                          - cell "0.00" [ref=f8e509]
+                          - cell "0.00" [ref=f8e510]
+                          - cell "152.07" [ref=f8e511]
+                          - cell "0.00" [ref=f8e512]
+                          - cell "0.00" [ref=f8e513]
+                          - cell "43.60" [ref=f8e514]
+                          - cell "26.62" [ref=f8e515]
+                          - cell "88.87" [ref=f8e516]
+                          - cell "0.00" [ref=f8e517]
+                          - cell "2.62" [ref=f8e518]
+                          - cell "66.20" [ref=f8e519]
+                    - list [ref=f8e520]:
+                      - listitem [ref=f8e521]:
+                        - article [ref=f8e523]: Tổng 576
+                      - listitem "Previous Page" [ref=f8e524]:
+                        - button "left" [disabled] [ref=f8e525]:
+                          - img "left" [ref=f8e526]:
+                            - img [ref=f8e527]
+                      - listitem "1" [ref=f8e529] [cursor=pointer]:
+                        - generic [ref=f8e530]: "1"
+                      - listitem "2" [ref=f8e531] [cursor=pointer]:
+                        - generic [ref=f8e532]: "2"
+                      - listitem "3" [ref=f8e533] [cursor=pointer]:
+                        - generic [ref=f8e534]: "3"
+                      - listitem "4" [ref=f8e535] [cursor=pointer]:
+                        - generic [ref=f8e536]: "4"
+                      - listitem "5" [ref=f8e537] [cursor=pointer]:
+                        - generic [ref=f8e538]: "5"
+                      - listitem "Next 5 Pages" [ref=f8e539] [cursor=pointer]:
+                        - generic [ref=f8e541]:
+                          - img "double-right" [ref=f8e542]:
+                            - img [ref=f8e543]
+                          - generic [ref=f8e545]: •••
+                      - listitem "29" [ref=f8e546] [cursor=pointer]:
+                        - generic [ref=f8e547]: "29"
+                      - listitem "Next Page" [ref=f8e548] [cursor=pointer]:
+                        - button "right" [ref=f8e549]:
+                          - img "right" [ref=f8e550]:
+                            - img [ref=f8e551]
+                      - listitem [ref=f8e553]:
+                        - generic "Page Size" [ref=f8e554] [cursor=pointer]:
+                          - generic [ref=f8e556]:
+                            - combobox "Page Size" [ref=f8e558]
+                            - generic "20 / page" [ref=f8e559]
+                          - generic:
+                            - img:
+                              - img
+            - generic [ref=f8e561]:
+              - img "check-circle" [ref=f8e562]:
+                - img [ref=f8e563]
+              - generic [ref=f8e565]: Xuất file thành công!
+      - generic [ref=e74]:
+        - link "Liên hệ" [ref=e76] [cursor=pointer]:
+          - /url: ""
+          - strong [ref=e78]: Liên hệ
+        - generic [ref=e79]: CỤC MÔI TRƯỜNG - BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG © 2018
