@@ -81,13 +81,12 @@ class Config:
     ENVISOFT_FORM_PASS: str = os.getenv("ENVISOFT_FORM_PASS", "1234567890!@#$%^&*()")
 
     # ── Target Stations (Hà Nội — exact aria-label match in dropdown) ──────
-    # Province = "TP. Hà Nội" in province dropdown, then station by aria-label
+    # NOTE: Stations 4 (CCBVMT) and 5 (Minh Khai) only have hourly data,
+    # not 5-minute data, so they are excluded from auto-fetch.
     TARGET_STATIONS: list[dict[str, str]] = [
         {"station_id": "32464751000956754854540602537", "name": "Hà Nội: 556 Nguyễn Văn Cừ (KK)"},
         {"station_id": "32464751000956754854540602541", "name": "Hà Nội: ĐHBK cổng Parabol đường Giải Phóng (KK)"},
         {"station_id": "32464751056296987075669257406", "name": "Hà Nội: Công viên Nhân Chính - Khuất Duy Tiến (KK)"},
-        {"station_id": "32464751056296987075669257407", "name": "Hà Nội: Trạm không khí cố định CCBVMT (KK)"},
-        {"station_id": "32481806690208467544715174761", "name": "Hà Nội: Trạm không khí cố định_phường Minh Khai (KK)"},
     ]
 
     # ── Scheduler ───────────────────────────────────────────────────────────

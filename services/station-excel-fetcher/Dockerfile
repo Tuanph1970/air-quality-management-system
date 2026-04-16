@@ -37,6 +37,10 @@ RUN playwright install chromium
 
 COPY . .
 
-EXPOSE 8011
+# Run Alembic migrations on every container start so the table always exists
+# after a fresh deploy (even if the volume was wiped)
+# Ensure the installed alembic package is not shadowed by /app/alembic_migrations
+ENV PYTHONPATH=/app
+CMD ["sh", "-c", "alembic upgrade head && exec python -m uvicorn src.main:app --host 0.0.0.0 --port 8011"]
 
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8011"]
+EXPOSE 8011

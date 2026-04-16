@@ -112,6 +112,8 @@ interfaces/   → FastAPI routers, Pydantic schemas, Event consumers
 
 Domain events are published via `shared.messaging.RabbitMQPublisher` after state changes. Application services collect events from entities and dispatch them.
 
+> **Ingestion services** (purpleair-ingestion, purpleair-listener, station-ingestion, station-excel-fetcher) do **not** follow the DDD layer structure. They use a flatter layout: `src/core/`, `src/api/`, `src/services/`.
+
 ---
 
 ## Shared Libraries (`services/shared/`)
@@ -134,6 +136,8 @@ shared/
 Key routing keys: `sensor.reading.created`, `alert.violation.detected`, `alert.violation.resolved`, `factory.suspended`, `factory.resumed`, `satellite.data.fetched`, `fusion.completed`, `validation.alert`
 
 `shared/messaging/consumer.py` declares all 5 exchanges on connect — `FUSION_EXCHANGE` and `SATELLITE_EXCHANGE` must always be in `_ALL_EXCHANGES`. The purpleair-ingestion-service publishes to `sensor.events` with routing key `sensor.reading.created`.
+
+Management UI: `http://localhost:15672` (user: `admin`, pass: from `RABBITMQ_DEFAULT_PASS` env var).
 
 ---
 
@@ -214,6 +218,8 @@ done
 - **API Gateway**: Uses `aiohttp.ClientSession` (not `httpx`) to call backend services asynchronously.
 - **Tests**: `pytest-asyncio` for async Python tests. In-memory repository test doubles mock `shared.*` imports via `conftest.py` (no Docker required for unit tests).
 - **Config**: All settings via `pydantic-settings` from env vars (`.env` → `docker-compose.yml` → container env).
+- **Migrations**: Schema changes use Alembic per service (`alembic/versions/`). Run migrations inside the container before the service starts if tables are missing.
+- **No CI/CD**: No GitHub Actions or automated pipelines. Deployments are manual via `docker compose`.
 
 ---
 

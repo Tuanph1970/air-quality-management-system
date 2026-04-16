@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column("station_id", sa.String(64), nullable=False, index=True),
         # Time
         sa.Column("measured_at", sa.DateTime, nullable=False, index=True),
-        sa.Column("fetched_at", sa.DateTime, nullable=False, server_default=sa.text("now())),
+        sa.Column("fetched_at", sa.DateTime, nullable=False, server_default=sa.text("now()")),
         # Pollutants (µg/m³)
         sa.Column("pm25", sa.Float, nullable=True),
         sa.Column("pm10", sa.Float, nullable=True),

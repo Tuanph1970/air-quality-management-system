@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.infrastructure.persistence.database import Base
+from src.infrastructure.persistence.models import Base
 from src.infrastructure.persistence.models import EnvisoftHourlyReadingModel
 
 config = context.config

@@ -201,8 +201,8 @@ class EnvisoftClient:
     _SEL_STATION      = ".ant-select-selector"  # nth=2: station dropdown
     _SEL_DATA_TYPE_2  = ".ant-select-selector"  # nth=3: data sub-type
     _SEL_AIR_TYPE     = ".ant-select-selector"  # nth=4: air type (Không khí)
-    _SEL_START_DATE   = '[placeholder="Ngày bắt đầu"]'   # textbox: start date
-    _SEL_END_DATE     = '[placeholder="Ngày kết thúc"]'   # textbox: end date
+    _SEL_START_DATE   = '[placeholder="Start date"]'    # textbox: start date (English placeholder)
+    _SEL_END_DATE     = '[placeholder="End date"]'        # textbox: end date (English placeholder)
     _SEL_EXPORT_BTN   = "button:has-text('XUẤT FILE')"   # button: XUẤT FILE
     _SEL_TABLE        = "table"           # data table
     # Ant Design DatePicker calendar cells (always visible once picker is open)
@@ -398,123 +398,147 @@ class EnvisoftClient:
     # Station export — the core workflow
     # ──────────────────────────────────────────────────────────────────────────
 
+    async def _select_dropdown_option_by_text(self, text: str) -> bool:
+        """Select a dropdown option by clicking its text label.
+
+        More reliable than index-based selection for dropdowns where items may
+        change order or scroll. Searches for exact text match in the open menu.
+        """
+        frame = self._page.frame_locator("iframe")
+        try:
+            # Try clicking the option by title/text in the dropdown list
+            option = frame.get_by_title(text)
+            if await option.count() > 0:
+                await option.first.click()
+                await self._page.wait_for_timeout(800)
+                logger.info(f"[DROPDOWN] Selected by text: '{text}'")
+                return True
+            # Fallback: click by inner text
+            option = frame.locator(f".ant-select-item[title='{text}'], .ant-select-item:has-text('{text}')")
+            if await option.count() > 0:
+                await option.first.click()
+                await self._page.wait_for_timeout(800)
+                logger.info(f"[DROPDOWN] Selected by text fallback: '{text}'")
+                return True
+            logger.warning(f"[DROPDOWN] Option '{text}' not found in open dropdown")
+            return False
+        except Exception as exc:
+            logger.warning(f"[DROPDOWN] Failed to select '{text}': {exc}")
+            return False
+
     async def _pre_select_province_and_data_type(self) -> None:
-        """Called once before looping stations: select "theo phút" + TP. Hà Nội by index."""
-        logger.info("[PAGE] Pre-selecting data type: Dữ liệu theo phút (option #1)...")
-        await self._open_dropdown(self._SEL_DATA_TYPE, nth=0)
-        await self._select_dropdown_option_by_index(1)  # "Dữ liệu theo phút" = option 1
+        """Called once before looping stations: select air type + data type + province.
+
+        The Air Type MUST be selected first (before province and station) — EnviSoft
+        loads station data based on the selected air type. Without this selection,
+        no data is returned.
+        """
+        frame = self._page.frame_locator("iframe")
+
+        # 1. Air Type: Không khí (KK) — MUST be selected FIRST (nth=4)
+        logger.info("[PAGE] Pre-selecting air type: Không khí (KK) (option #4)...")
+        await self._open_dropdown(self._SEL_AIR_TYPE, nth=4)
+        await self._select_dropdown_option_by_text("Không khí (KK)")
         await self._page.wait_for_timeout(500)
 
-        logger.info("[PAGE] Pre-selecting province: TP. Hà Nội (option #1)...")
+        # 2. Data type: Dữ liệu theo phút (nth=0)
+        logger.info("[PAGE] Pre-selecting data type: Dữ liệu theo phút (option #1)...")
+        await self._open_dropdown(self._SEL_DATA_TYPE, nth=0)
+        await self._select_dropdown_option_by_index(1)
+        await self._page.wait_for_timeout(500)
+
+        # 3. Province: TP. Hà Nội (nth=1) — select by text for reliability
+        logger.info("[PAGE] Pre-selecting province: TP. Hà Nội...")
         await self._open_dropdown(self._SEL_PROVINCE, nth=1)
-        await self._select_dropdown_option_by_index(1)  # "TP. Hà Nội" = option 1
+        await self._select_dropdown_option_by_text("TP. Hà Nội")
         await self._page.wait_for_timeout(1000)
 
-    async def _set_ant_design_date_picker(
+    async def _set_date_input(
         self,
         picker_placeholder: str,
         date_str: str,
         frame,
     ) -> None:
-        """Fill an Ant Design DatePicker by interacting with the calendar UI.
+        """Fill the date input field inside the iframe.
 
-        Ant Design DatePickers use an internal onChange handler — .fill() on the
-        visible input bypasses it and the picker never updates. Instead we:
-          1. Click the input to open the calendar panel
-          2. Click a specific date cell to confirm the selection (fires onChange)
+        Tries: (1) direct click+type, (2) JS fill via iframe context, (3) click wrapper.
 
-        The date_str is YYYY-MM-DD; the calendar panel shows month+year as its
-        title and day cells from the 1st to the last of that month.
+        The EnviSoft page uses native HTML5 <input type="date"> with English
+        placeholders ("Start date" / "End date").
         """
-        from datetime import datetime
-
-        parsed = datetime.strptime(date_str, "%Y-%m-%d")
-        year, month, day = parsed.year, parsed.month, parsed.day
-
-        # Open the picker
+        formatted = date_str  # YYYY-MM-DD
         input_el = frame.locator(f'[placeholder="{picker_placeholder}"]')
-        await input_el.click()
-        await self._page.wait_for_timeout(800)
 
-        # Loop until the calendar shows the target month
-        for _ in range(13):  # max 12 month-change clicks
-            title_el = frame.locator(".ant-picker-header")
-            title_text = await title_el.inner_text()
-            logger.info(f"[CALENDAR] Panel title: {title_text}")
+        # ── Method 1: click → clear → type (native HTML5 input) ───────────────
+        try:
+            # Wait for input to appear (may need page to fully render)
+            await input_el.wait_for(state="attached", timeout=15_000)
+            await self._page.wait_for_timeout(1_000)
 
-            # Check if the calendar already shows the correct month+year
-            # Ant Design header format is e.g. "Tháng 4 2026" or "April 2026"
-            if str(month) in title_text and str(year) in title_text:
-                logger.info(f"[CALENDAR] Month/year matches — selecting day {day}")
-                break
+            # Click to focus
+            await input_el.click(timeout=5_000)
+            await self._page.wait_for_timeout(300)
 
-            # Navigate to the correct month by clicking prev/next arrows
-            # Try both button directions to find the right one
-            next_btn = frame.locator(".ant-picker-next-icon").first
-            prev_btn = frame.locator(".ant-picker-prev-icon").first
+            # Select all and replace with new date
+            await input_el.press("Control+a")
+            await input_el.type(formatted, delay=60)
+            await input_el.press("Tab")
+            await self._page.wait_for_timeout(800)
 
-            current_month_text = title_text.lower()
+            value = await input_el.input_value()
+            if value == formatted or formatted in value:
+                logger.info(f"[DATE] ✓ Method 1 success: '{value}'")
+                return
+            logger.warning(f"[DATE] Method 1 — value is '{value}', expected '{formatted}'")
+        except Exception as exc:
+            logger.warning(f"[DATE] Method 1 failed: {exc}")
 
-            # Determine direction: if target month is ahead, click next; else prev
-            # Parse current month from title
-            if any(m in current_month_text for m in ["january", "february", "march",
-                                                       "janvier", "febrero", "märz",
-                                                       "tháng 1", "tháng 2", "tháng 3",
-                                                       "1月", "jan"]):
-                cur_m = 1
-            elif any(m in current_month_text for m in ["april", "avril", "abril", "apr",
-                                                          "tháng 4", "tháng 5", "tháng 6",
-                                                          "4月", "may", "mai"]):
-                cur_m = 4
-            elif any(m in current_month_text for m in ["july", "juillet", "julio", "jul",
-                                                         "tháng 7", "tháng 8", "tháng 9",
-                                                         "7月"]):
-                cur_m = 7
-            elif any(m in current_month_text for m in ["october", "octobre", "oktober",
-                                                           "tháng 10", "tháng 11", "tháng 12",
-                                                           "10月", "11月", "12月"]):
-                cur_m = 10
-            else:
-                # Try to parse the month number from title
-                import re
-                m_match = re.search(r"(\d{1,2})[/.](\d{4})", title_text)
-                if m_match:
-                    cur_m = int(m_match.group(1))
-                else:
-                    # Fallback: just try next
-                    cur_m = month + 1  # force a click
+        # ── Method 2: JS inside iframe to set value + fire events ─────────────
+        try:
+            js_code = """
+                function() {
+                    var inputs = document.querySelectorAll('input[placeholder]');
+                    var target = null;
+                    for (var i = 0; i < inputs.length; i++) {
+                        if (inputs[i].getAttribute('placeholder') === arguments[0]) {
+                            target = inputs[i];
+                            break;
+                        }
+                    }
+                    if (!target) return 'NOT_FOUND';
+                    var setter = Object.getOwnPropertyDescriptor(
+                        window.HTMLInputElement.prototype, 'value'
+                    ).set;
+                    setter.call(target, arguments[1]);
+                    target.dispatchEvent(new Event('input', {bubbles: true}));
+                    target.dispatchEvent(new Event('change', {bubbles: true}));
+                    return target.value;
+                }
+            """
+            result = await frame.locator("body").evaluate(js_code, picker_placeholder, formatted)
+            await self._page.wait_for_timeout(800)
 
-            # Click next or prev depending on whether target month is ahead
-            if month > cur_m:
-                await next_btn.click()
-            else:
-                await prev_btn.click()
+            if result == formatted or (result and result != 'NOT_FOUND'):
+                logger.info(f"[DATE] ✓ Method 2 success: '{result}'")
+                return
+            logger.warning(f"[DATE] Method 2 result: '{result}'")
+        except Exception as exc:
+            logger.warning(f"[DATE] Method 2 failed: {exc}")
 
+        # ── Method 3: click the visible text/label wrapper to open picker ──────
+        try:
+            wrapper = frame.locator(
+                f'[placeholder="{picker_placeholder}"]'
+                f' ~ *:not(script):not(style)'
+            ).first
+            await wrapper.click(timeout=5_000)
             await self._page.wait_for_timeout(500)
-        else:
-            logger.warning(f"[CALENDAR] Could not navigate to {month}/{year} in 12 clicks")
-
-        # Click the target day cell
-        # Ant Design cells show the day number as aria-label like "2026-04-13"
-        target_label = f"{year}-{month:02d}-{day:02d}"
-        day_cell = frame.locator(f'.ant-picker-cell[aria-label="{target_label}"]')
-        if await day_cell.count() > 0:
-            await day_cell.click()
-            logger.info(f"[CALENDAR] Selected {target_label}")
-        else:
-            # Fallback: click by inner text matching the day number
-            all_cells = frame.locator(".ant-picker-content td")
-            for cell in all_cells.all():
-                text = await cell.inner_text()
-                if text.strip() == str(day):
-                    await cell.click()
-                    logger.info(f"[CALENDAR] Selected day {day} by text fallback")
-                    break
-            else:
-                logger.warning(f"[CALENDAR] Day {day} cell not found — trying fill() fallback")
-                await input_el.fill(date_str)
-
-        await self._page.wait_for_timeout(500)
+            await self._page.keyboard.type(formatted, delay=60)
+            await self._page.keyboard.press("Tab")
+            await self._page.wait_for_timeout(500)
+            logger.info(f"[DATE] ✓ Method 3 success (wrapper click)")
+        except Exception as exc:
+            logger.warning(f"[DATE] Method 3 failed: {exc}")
 
     async def _select_station_and_date(
         self,
@@ -529,13 +553,37 @@ class EnvisoftClient:
         logger.info(f"[PAGE] Selecting station by index {station_index}...")
         await self._open_dropdown(self._SEL_STATION, nth=2)
         await self._select_dropdown_option_by_index(station_index)
-        await self._page.wait_for_timeout(1000)
 
-        # 2. Set date range using proper calendar UI interaction
+        # Wait for dropdown to fully close before touching date inputs
+        await self._page.wait_for_timeout(2_000)
+        for _ in range(5):
+            open_menus = await frame.locator(".ant-select-dropdown:visible").count()
+            if open_menus == 0:
+                break
+            await self._page.wait_for_timeout(500)
+        else:
+            logger.warning("[PAGE] Dropdown may still be open, continuing anyway")
+
+        # 2. Set date range — use direct fill() + Tab (HTML5 date input accepts YYYY-MM-DD format)
         logger.info(f"[PAGE] Setting date range: {from_date} → {to_date}...")
-        await self._set_ant_design_date_picker("Ngày bắt đầu", from_date, frame)
-        await self._set_ant_design_date_picker("Ngày kết thúc", to_date, frame)
-        await self._page.wait_for_timeout(1000)
+        start_el = frame.locator('[placeholder="Start date"]')
+        end_el = frame.locator('[placeholder="End date"]')
+
+        try:
+            await start_el.fill(from_date)
+            await self._page.wait_for_timeout(200)
+            await start_el.press("Tab")
+        except Exception as exc:
+            logger.warning(f"[DATE] Start date fill failed: {exc}")
+
+        try:
+            await end_el.fill(to_date)
+            await self._page.wait_for_timeout(200)
+            await end_el.press("Tab")
+        except Exception as exc:
+            logger.warning(f"[DATE] End date fill failed: {exc}")
+
+        await self._page.wait_for_timeout(2_000)
 
         # 3. Wait for data table to load
         logger.info("[PAGE] Waiting for data table to load...")
@@ -556,7 +604,7 @@ class EnvisoftClient:
 
         frame = self._page.frame_locator("iframe")
 
-        async with frame.page.expect_download(timeout=60000) as dl_info:
+        async with self._page.expect_download(timeout=60000) as dl_info:
             await frame.locator(self._SEL_EXPORT_BTN).click()
             logger.info("[EXPORT] Waiting for download...")
 

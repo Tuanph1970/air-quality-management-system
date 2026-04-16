@@ -79,7 +79,11 @@ class ExcelFetchScheduler:
         except Exception:
             logger.exception("Scheduler: Daily fetch FAILED")
 
-    async def _default_fetch(self) -> None:
+    async def _default_fetch(
+        self,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> None:
         """Fetch → Excel downloads → parse → MySQL pipeline."""
         from ..fetcher.envisoft_client import EnvisoftClient
         from ..infrastructure.persistence.reading_repository import ReadingRepository
@@ -87,8 +91,10 @@ class ExcelFetchScheduler:
         # ── Determine date range ──────────────────────────────────────────
         # Previous full day (00:00:00 → 23:59:59)
         today = datetime.utcnow().date()
-        from_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
-        to_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        if from_date is None:
+            from_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        if to_date is None:
+            to_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")
 
         logger.info(f"[SCHEDULER] Exporting: {from_date}")
         logger.info(f"[SCHEDULER] Stations: {len(config.TARGET_STATIONS)}")
@@ -145,7 +151,7 @@ class ExcelFetchScheduler:
         logger.info(f"[MANUAL] Fetch triggered: {from_date} → {to_date}")
 
         try:
-            await self._default_fetch()
+            await self._default_fetch(from_date=from_date, to_date=to_date)
             return {
                 "status": "ok",
                 "from_date": from_date,
