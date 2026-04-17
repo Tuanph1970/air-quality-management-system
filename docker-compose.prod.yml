@@ -198,6 +198,96 @@ services:
     networks:
       - aqms-network
 
+  # ── station-service DB ────────────────────────────────────────────────────
+  station-db:
+    image: postgres:15-alpine
+    container_name: aqms-station-db
+    environment:
+      POSTGRES_DB: station_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - station_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d station_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ── wrf-service DB ────────────────────────────────────────────────────────
+  wrf-db:
+    image: postgres:15-alpine
+    container_name: aqms-wrf-db
+    environment:
+      POSTGRES_DB: wrf_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - wrf_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d wrf_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ── station-excel-fetcher DB ──────────────────────────────────────────────
+  station-excel-fetcher-db:
+    image: postgres:15-alpine
+    container_name: aqms-station-excel-fetcher-db
+    environment:
+      POSTGRES_DB: station_excel_fetcher_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - station_excel_fetcher_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d station_excel_fetcher_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
   redis:
     image: redis:7-alpine
     container_name: aqms-redis
@@ -515,6 +605,140 @@ services:
       - aqms-network
 
   # ===========================================================================
+  # STATION SERVICE
+  # ===========================================================================
+  station-service:
+    build:
+      context: ./services/station-service
+      dockerfile: Dockerfile
+    container_name: aqms-station-service
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=station-service
+      - SERVICE_PORT=8007
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@station-db:5432/station_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - USE_FAKE_DATA=${USE_FAKE_DATA:-False}
+      - FAKE_DATA_STATION_COUNT=${FAKE_DATA_STATION_COUNT:-5}
+      - FAKE_DATA_INTERVAL_SECONDS=${FAKE_DATA_INTERVAL_SECONDS:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8007/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      station-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # WRF SERVICE
+  # ===========================================================================
+  wrf-service:
+    build:
+      context: ./services/wrf-service
+      dockerfile: Dockerfile
+    container_name: aqms-wrf-service
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=wrf-service
+      - SERVICE_PORT=8009
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@wrf-db:5432/wrf_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - WRF_NUM_PROCESSES=${WRF_NUM_PROCESSES:-4}
+      - WRF_USE_SAMPLE_DATA=${WRF_USE_SAMPLE_DATA:-True}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8009/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      wrf-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
+  # STATION EXCEL FETCHER (Envisoft data source — no REST API)
+  # ===========================================================================
+  station-excel-fetcher:
+    build:
+      context: ./services/station-excel-fetcher
+      dockerfile: Dockerfile
+    container_name: aqms-station-excel-fetcher
+    environment:
+      - PYTHONPATH=/app
+      - SERVICE_NAME=station-excel-fetcher
+      - SERVICE_PORT=8011
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@station-excel-fetcher-db:5432/station_excel_fetcher_db
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      - ENVISOFT_BASIC_USER=${ENVISOFT_BASIC_USER:-tw-admin}
+      - ENVISOFT_BASIC_PASS=${ENVISOFT_BASIC_PASS}
+      - ENVISOFT_FORM_USER=${ENVISOFT_FORM_USER:-duongngocbach}
+      - ENVISOFT_FORM_PASS=${ENVISOFT_FORM_PASS}
+      - FETCH_CRON_EXPRESSION=${FETCH_CRON_EXPRESSION:-1 0 * * *}
+      - FETCH_ON_STARTUP=${FETCH_ON_STARTUP:-False}
+      - RAW_DATA_ROOT=/app/raw_excel_data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - station_excel_fetcher_data:/app/raw_excel_data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d station_excel_fetcher_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      station-excel-fetcher-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # FRONTEND - Nginx serving production build (ONLY PUBLIC FACING PORT)
   # ===========================================================================
   frontend:
@@ -575,6 +799,14 @@ volumes:
   rabbitmq_data:
     driver: local
   ml_models_data:
+    driver: local
+  station_db_data:
+    driver: local
+  wrf_db_data:
+    driver: local
+  station_excel_fetcher_db_data:
+    driver: local
+  station_excel_fetcher_data:
     driver: local
 
 # =============================================================================
