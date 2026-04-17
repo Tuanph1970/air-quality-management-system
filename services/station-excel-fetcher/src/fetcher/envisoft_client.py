@@ -613,7 +613,49 @@ class EnvisoftClient:
         logger.info(f"[EXPORT] Downloaded: {download_path.name}")
         return download_path
 
+    async def export_station_data_full(
+        self,
+        station_id: str,
+        station_name: str,
+        station_index: int,
+        from_date: str,
+        to_date: str,
+        output_dir: Path | None = None,
+    ) -> list[dict[str, Any]]:
+        """Self-contained single-station export: login → navigate → pre-select → export.
+
+        Use this when exporting a single station outside of the all-stations loop
+        (e.g., for retry logic where we need one station at a time).
+
+        Args:
+            station_id: Envisoft station ID from config.
+            station_name: Station display name for logging.
+            station_index: 1-based index in the station dropdown.
+            from_date: Start date YYYY-MM-DD.
+            to_date: End date YYYY-MM-DD.
+            output_dir: Directory to save the raw Excel.
+
+        Returns:
+            List of normalized data records ready for DB insertion.
+        """
+        # ── Full setup: login + navigate + pre-select (one browser session) ───
+        await self._start()
+        await self._login_via_iframe()
+        await self._navigate_to_data_page()
+        await self._pre_select_province_and_data_type()
+
+        # ── Export this station ───────────────────────────────────────────────
+        return await self.export_station_data(
+            station_id=station_id,
+            station_name=station_name,
+            station_index=station_index,
+            from_date=from_date,
+            to_date=to_date,
+            output_dir=output_dir,
+        )
+
     async def export_station_data(
+
         self,
         station_id: str,
         station_name: str,

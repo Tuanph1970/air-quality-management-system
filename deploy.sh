@@ -129,6 +129,8 @@ check wrf-service       120
 check station-service   120
 check purpleair-ingestion-service 120
 check station-ingestion-service 120
+check station-excel-fetcher 120
+check frontend            60
 check api-gateway       120
 
 # ── 7. Summary ────────────────────────────────────────────────────────────────

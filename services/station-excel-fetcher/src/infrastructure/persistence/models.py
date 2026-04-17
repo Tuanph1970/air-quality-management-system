@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date as date_type, datetime
 
 from sqlalchemy import (
     BigInteger,
     DateTime,
+    Date,
     Float,
     Index,
     Integer,
     String,
+    Text,
     UniqueConstraint,
     text,
 )
@@ -87,4 +89,50 @@ class EnvisoftHourlyReadingModel(Base):
         return (
             f"<EnvisoftHourlyReading(station_id={self.station_id}, "
             f"measured_at={self.measured_at}, aqi={self.aqi})>"
+        )
+
+
+class EnvisoftFetchLogModel(Base):
+    """SQLAlchemy model for fetch attempt logs.
+
+    Tracks every fetch attempt so we can detect missing days and auto-retry.
+    """
+
+    __tablename__ = "envisoft_fetch_logs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    # The date this fetch was FOR (not when it ran)
+    fetch_date: Mapped[date_type] = mapped_column(Date, nullable=False, index=True)
+    # Which station was targeted
+    station_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Attempt number within this date+station (1 = first try)
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # pending | success | partial | failed
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    # How many records were upserted this attempt
+    records_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Human-readable error if failed
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # When this attempt ran
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=text("(CURRENT_TIMESTAMP)")
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Which Excel file was used (if any)
+    excel_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "fetch_date", "station_id", "attempt",
+            name="uq_fetchlog_date_station_attempt",
+        ),
+        Index("idx_fetchlog_date_status", "fetch_date", "status"),
+        Index("idx_fetchlog_date_station", "fetch_date", "station_id"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<EnvisoftFetchLog(date={self.fetch_date}, "
+            f"station={self.station_id}, attempt={self.attempt}, status={self.status})>"
         )

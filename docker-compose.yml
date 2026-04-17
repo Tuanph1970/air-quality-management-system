@@ -669,6 +669,9 @@ services:
       - ENVISOFT_FORM_PASS=${ENVISOFT_FORM_PASS:-1234567890!@#$%^&*()}
     volumes:
       - station_excel_data:/app/raw_excel_data
+    depends_on:
+      mysql:
+        condition: service_healthy
     extra_hosts:
       - "admin-qttd.tedp.vn:103.88.113.253"
     healthcheck:

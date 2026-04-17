@@ -96,12 +96,27 @@ app.add_middleware(
 class ManualFetchRequest(BaseModel):
     from_date: str | None = None
     to_date: str | None = None
+    force: bool = False  # Re-fetch even if success log exists
 
 
 class ManualFetchResponse(BaseModel):
     status: str
     from_date: str
     to_date: str
+    total_records: int | None = None
+    per_date: dict | None = None
+    message: str | None = None
+
+
+class RetryRequest(BaseModel):
+    fetch_date: str | None = None  # YYYY-MM-DD, defaults to yesterday
+
+
+class RetryResponse(BaseModel):
+    status: str
+    fetch_date: str
+    results: dict | None = None
+    total_records: int | None = None
     message: str | None = None
 
 
@@ -156,22 +171,20 @@ async def trigger_fetch(req: ManualFetchRequest):
     """Trigger an on-demand data fetch.
 
     If from_date/to_date are not provided, fetches yesterday's data.
+    Use force=true to re-fetch even if data already exists.
     """
-    if config.FETCH_ON_STARTUP:
-        # Scheduler already running
-        pass
-
     scheduler = ExcelFetchScheduler()
     yesterday = (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
     from_d = req.from_date or yesterday
     to_d = req.to_date or yesterday
 
-    logger.info(f"[API] Manual fetch: {from_d} → {to_d}")
+    logger.info(f"[API] Manual fetch: {from_d} → {to_d}, force={req.force}")
 
     try:
         result = await scheduler.trigger_manual_fetch(
             from_date=from_d,
             to_date=to_d,
+            force=req.force,
         )
     except Exception as exc:
         logger.exception("[API] Manual fetch failed")
@@ -180,20 +193,62 @@ async def trigger_fetch(req: ManualFetchRequest):
             detail=str(exc),
         )
 
-    if result["status"] == "ok":
-        return ManualFetchResponse(
-            status="ok",
-            from_date=from_d,
-            to_date=to_d,
-            message="Fetch completed successfully",
+    return ManualFetchResponse(
+        status=result["status"],
+        from_date=from_d,
+        to_date=to_d,
+        total_records=result.get("total_records"),
+        per_date=result.get("per_date"),
+        message=result.get("message"),
+    )
+
+
+@app.post("/retry", response_model=RetryResponse)
+async def trigger_retry(req: RetryRequest):
+    """Force-retry fetching a specific date (bypasses success check).
+
+    Use this to manually catch up a missing day.
+    Defaults to yesterday.
+    """
+    scheduler = ExcelFetchScheduler()
+    fetch_date = req.fetch_date or (
+        (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
+    )
+
+    logger.info(f"[API] Retry requested for date: {fetch_date}")
+
+    try:
+        result = await scheduler.trigger_retry(fetch_date=fetch_date)
+    except Exception as exc:
+        logger.exception("[API] Retry failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(exc),
         )
-    else:
-        return ManualFetchResponse(
-            status="error",
-            from_date=from_d,
-            to_date=to_d,
-            message=result.get("message", "Unknown error"),
-        )
+
+    return RetryResponse(
+        status=result["status"],
+        fetch_date=fetch_date,
+        results=result.get("results"),
+        total_records=result.get("total_records"),
+        message=result.get("message"),
+    )
+
+
+@app.get("/fetch-logs")
+async def get_fetch_logs(days: int = 7):
+    """Return fetch attempt history for the last N days.
+
+    Shows status per (date, station): never_run, pending, success, partial, failed.
+    """
+    try:
+        from .infrastructure.persistence.reading_repository import ReadingRepository
+        repo = ReadingRepository()
+        logs = await repo.get_fetch_log_summary(days_back=days)
+        return {"count": len(logs), "logs": logs}
+    except Exception as exc:
+        logger.exception("Failed to query fetch logs")
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/stations")
