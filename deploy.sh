@@ -99,6 +99,30 @@ if [ "$PROD_MODE" = true ] && [ ${#EXTRA_ENV_VARS[@]} -gt 0 ]; then
   done
 fi
 
+# ── 2c. Set default production passwords (auto-update .env.prod)
+if [ "$PROD_MODE" = true ]; then
+  DEFAULTS="
+MYSQL_ROOT_PASSWORD=Mysql_2025
+ENVISOFT_BASIC_PASS=tw-admin
+ENVISOFT_FORM_PASS='1234567890!@#\$%^&*()'
+"
+  while IFS= read -r line; do
+    key="${line%%=*}"
+    val="${line#*=}"
+    # Escape sed pattern and value
+    key_escaped="${key//\//\\/}"
+    key_escaped="${key_escaped//&/\\&}"
+    key_escaped="${key_escaped//\$/\\\$}"
+    val_escaped="${val//\\/\\\\}"
+    val_escaped="${val_escaped//\//\\/}"
+    val_escaped="${val_escaped//&/\\&}"
+    val_escaped="${val_escaped//\$/\\\$}"
+    # Replace key=... with key=val (preserving existing quotes around value if any)
+    sed -i "s|^${key_escaped}=.*|${key_escaped}=${val_escaped}|" "$ENV_FILE"
+  done <<< "$DEFAULTS"
+  echo "[INFO]  Auto-set default production passwords in $ENV_FILE"
+fi
+
 # ── 3. Warn about unset secrets in prod ─────────────────────────────────────
 if [ "$PROD_MODE" = true ]; then
   # Source env file to check for empty secrets
