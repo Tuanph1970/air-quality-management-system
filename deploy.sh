@@ -108,7 +108,7 @@ if [ "$PROD_MODE" = true ]; then
   set +a
 
   MISSING=()
-  for var in DB_PASSWORD RABBITMQ_PASS REDIS_PASSWORD JWT_SECRET MYSQL_ROOT_PASSWORD ENVISOFT_BASIC_PASS ENVISOFT_FORM_PASS; do
+  for var in DB_PASSWORD RABBITMQ_PASS REDIS_PASSWORD JWT_SECRET ENVISOFT_BASIC_PASS ENVISOFT_FORM_PASS; do
     val="$(eval echo "\$$var")"
     if [ -z "$val" ]; then
       MISSING+=("$var")
