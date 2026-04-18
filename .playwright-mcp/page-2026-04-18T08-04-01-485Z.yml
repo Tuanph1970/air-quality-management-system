@@ -1,0 +1,131 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]:
+          - text: AQMS
+          - generic [ref=e10]: Air Quality
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /
+          - img [ref=e13]
+          - generic [ref=e18]: Dashboard
+        - link "Air Quality" [ref=e20] [cursor=pointer]:
+          - /url: /air-quality
+          - img [ref=e21]
+          - generic [ref=e25]: Air Quality
+        - link "Factories" [ref=e26] [cursor=pointer]:
+          - /url: /factories
+          - img [ref=e27]
+          - generic [ref=e29]: Factories
+        - link "Sensors" [ref=e30] [cursor=pointer]:
+          - /url: /sensors
+          - img [ref=e31]
+          - generic [ref=e37]: Sensors
+        - link "Alerts" [ref=e38] [cursor=pointer]:
+          - /url: /alerts
+          - img [ref=e39]
+          - generic [ref=e41]: Alerts
+        - link "Map View" [ref=e42] [cursor=pointer]:
+          - /url: /map
+          - img [ref=e43]
+          - generic [ref=e45]: Map View
+        - link "Monitoring Stations" [ref=e46] [cursor=pointer]:
+          - /url: /stations
+          - img [ref=e47]
+          - generic [ref=e50]: Monitoring Stations
+        - link "Raw Station Data" [active] [ref=e51] [cursor=pointer]:
+          - /url: /raw-station-data
+          - img [ref=e52]
+          - generic [ref=e54]: Raw Station Data
+        - link "Data Sources" [ref=e55] [cursor=pointer]:
+          - /url: /data-sources
+          - img [ref=e56]
+          - generic [ref=e58]: Data Sources
+        - link "WRF Forecast" [ref=e59] [cursor=pointer]:
+          - /url: /wrf
+          - img [ref=e60]
+          - generic [ref=e62]: WRF Forecast
+        - link "Reports" [ref=e63] [cursor=pointer]:
+          - /url: /reports
+          - img [ref=e64]
+          - generic [ref=e67]: Reports
+      - generic [ref=e68]:
+        - link "Settings" [ref=e69] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e70]
+          - generic [ref=e73]: Settings
+        - button "Collapse" [ref=e74] [cursor=pointer]:
+          - img [ref=e75]
+          - generic [ref=e77]: Collapse
+    - main [ref=e78]:
+      - generic [ref=e272]:
+        - generic [ref=e273]:
+          - generic [ref=e274]:
+            - heading "Raw Station Data" [level=1] [ref=e275]
+            - paragraph [ref=e276]: 5-minute interval air quality data from EnviSoft
+          - generic [ref=e277]:
+            - generic [ref=e278]:
+              - img [ref=e279]
+              - textbox "Search..." [ref=e282]
+            - button [ref=e283] [cursor=pointer]:
+              - img [ref=e284]
+            - generic [ref=e288]:
+              - img [ref=e290]
+              - generic [ref=e293]:
+                - paragraph [ref=e294]: Tuanph
+                - paragraph [ref=e295]: INSPECTOR
+              - button "Logout" [ref=e296] [cursor=pointer]:
+                - img [ref=e297]
+        - generic [ref=e301]:
+          - generic [ref=e303]:
+            - heading "Fetch Data" [level=3] [ref=e304]:
+              - img [ref=e305]
+              - text: Fetch Data
+            - generic [ref=e309]:
+              - generic [ref=e310]: Select Station
+              - button "Choose a station..." [ref=e311] [cursor=pointer]:
+                - generic [ref=e312]:
+                  - img [ref=e313]
+                  - generic [ref=e316]: Choose a station...
+                - img [ref=e317]
+            - generic [ref=e319]:
+              - generic [ref=e320]:
+                - generic [ref=e321]:
+                  - generic [ref=e322]: From Date
+                  - generic [ref=e323]:
+                    - img [ref=e324]
+                    - textbox [ref=e326]: 2026-04-11
+                - generic [ref=e327]:
+                  - generic [ref=e328]: To Date
+                  - generic [ref=e329]:
+                    - img [ref=e330]
+                    - textbox [ref=e332]: 2026-04-18
+              - generic [ref=e333]:
+                - generic [ref=e334]: Time Interval
+                - combobox [ref=e335]:
+                  - option "5 minutes" [selected]
+                  - option "15 minutes"
+                  - option "30 minutes"
+                  - option "1 hour"
+              - button "Fetch Raw Data" [disabled] [ref=e336]:
+                - img [ref=e337]
+                - generic [ref=e341]: Fetch Raw Data
+          - generic [ref=e343]:
+            - generic [ref=e344]:
+              - heading "Raw Data" [level=3] [ref=e345]:
+                - img [ref=e346]
+                - text: Raw Data
+              - generic [ref=e348]:
+                - button [ref=e349] [cursor=pointer]:
+                  - img [ref=e350]
+                - button "Export CSV" [disabled] [ref=e352]:
+                  - img [ref=e353]
+                  - text: Export CSV
+                - button [disabled] [ref=e356]:
+                  - img [ref=e357]
+            - generic [ref=e363]:
+              - img [ref=e364]
+              - paragraph [ref=e368]: No raw data available. Fetch data first.
+  - generic [ref=e270]: "0"
