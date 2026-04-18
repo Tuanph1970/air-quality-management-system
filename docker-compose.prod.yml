@@ -15,6 +15,36 @@
 
 services:
   # ===========================================================================
+  # INFRASTRUCTURE - MySQL (for station-excel-fetcher)
+  # ===========================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: aqms-mysql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Mysql_2026}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Mysql_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - aqms-network
+
+  # ===========================================================================
   # INFRASTRUCTURE - Message Broker
   # ===========================================================================
   rabbitmq:
@@ -259,34 +289,8 @@ services:
       - aqms-network
 
   # ── station-excel-fetcher DB ──────────────────────────────────────────────
-  station-excel-fetcher-db:
-    image: postgres:15-alpine
-    container_name: aqms-station-excel-fetcher-db
-    environment:
-      POSTGRES_DB: station_excel_fetcher_db
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - station_excel_fetcher_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d station_excel_fetcher_db"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"
-    networks:
-      - aqms-network
+  # Note: station-excel-fetcher uses MySQL (shared mysql container), not PostgreSQL.
+  # DB is created by scripts/init-mysql.sql — no separate service needed.
 
   redis:
     image: redis:7-alpine
@@ -403,6 +407,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   sensor-service:
     build:
@@ -440,6 +446,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   alert-service:
     build:
@@ -477,6 +485,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   air-quality-service:
     build:
@@ -493,6 +503,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ml_models_data:/app/models
+      - ./services/shared:/app/shared
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\""]
       interval: 10s
@@ -555,6 +566,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   remote-sensing-service:
     build:
@@ -579,6 +592,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - satellite_data:/app/data
+      - ./services/shared:/app/shared
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8006/health')\""]
       interval: 10s
@@ -646,6 +660,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   # ===========================================================================
   # WRF SERVICE
@@ -688,6 +704,8 @@ services:
         max-file: "5"
     networks:
       - aqms-network
+    volumes:
+      - ./services/shared:/app/shared
 
   # ===========================================================================
   # STATION EXCEL FETCHER (Envisoft data source — no REST API)
@@ -701,8 +719,8 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=station-excel-fetcher
       - SERVICE_PORT=8011
-      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@station-excel-fetcher-db:5432/station_excel_fetcher_db
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+      # MySQL: same as dev stack — shared mysql container
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_excel_fetcher_db?charset=utf8mb4
       - ENVISOFT_BASIC_USER=${ENVISOFT_BASIC_USER:-tw-admin}
       - ENVISOFT_BASIC_PASS=${ENVISOFT_BASIC_PASS}
       - ENVISOFT_FORM_USER=${ENVISOFT_FORM_USER:-duongngocbach}
@@ -711,18 +729,18 @@ services:
       - FETCH_ON_STARTUP=${FETCH_ON_STARTUP:-False}
       - RAW_DATA_ROOT=/app/raw_excel_data
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    extra_hosts:
+      - "admin-qttd.tedp.vn:103.88.113.253"
     volumes:
       - station_excel_fetcher_data:/app/raw_excel_data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d station_excel_fetcher_db"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8011/health || exit 1"]
+      interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
     depends_on:
-      station-excel-fetcher-db:
-        condition: service_healthy
-      rabbitmq:
+      mysql:
         condition: service_healthy
     restart: always
     deploy:
@@ -804,12 +822,10 @@ volumes:
     driver: local
   wrf_db_data:
     driver: local
-  station_excel_fetcher_db_data:
-    driver: local
   station_excel_fetcher_data:
     driver: local
-
-# =============================================================================
+  mysql_data:
+    driver: local
 # NETWORKS
 # =============================================================================
 networks:

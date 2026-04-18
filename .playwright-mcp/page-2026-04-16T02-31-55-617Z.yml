@@ -1,0 +1,533 @@
+- generic [active] [ref=e1]:
+  - banner: 
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - list [ref=e5]:
+        - listitem [ref=e6]:
+          - img [ref=e7]
+        - listitem [ref=e8]:
+          - link "Trang chủ" [ref=e9] [cursor=pointer]:
+            - /url: /eos/dashboard/index?qttd=True
+            - img [ref=e10]
+            - text: Trang chủ
+        - listitem [ref=e11]:
+          - link "Giám sát trực tuyến" [ref=e12] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e13]
+            - text: Giám sát trực tuyến
+        - listitem [ref=e14]:
+          - link "Tra cứu dữ liệu" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e16]
+            - text: Tra cứu dữ liệu
+        - listitem [ref=e17]:
+          - link "Báo cáo" [ref=e18] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e19]
+            - text: Báo cáo
+          - text:   
+        - listitem [ref=e20]:
+          - link "Thống kê" [ref=e21] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e22]
+            - text: Thống kê
+          - text:    
+        - listitem [ref=e23]:
+          - text:   
+          - link "Cài đặt" [ref=e24] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e25]
+            - text: Cài đặt
+    - generic [ref=e26]:
+      - navigation [ref=e28]:
+        - generic [ref=e30]:
+          - heading "BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG" [level=5] [ref=e31]
+          - heading "PHẦN MỀM QUẢN LÝ DỮ LIỆU QUAN TRẮC" [level=5] [ref=e32]
+        - list [ref=e33]:
+          - listitem [ref=e34]:
+            - link " Định kỳ" [expanded] [ref=e35] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qtdk=True
+              - generic [ref=e36]: 
+              - strong [ref=e38]: Định kỳ
+          - listitem [ref=e39]:
+            - link " Tự động" [expanded] [ref=e40] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qttd=True
+              - generic [ref=e41]: 
+              - strong [ref=e43]: Tự động
+          - listitem [ref=e44]:
+            - link " Viễn thám" [expanded] [ref=e45] [cursor=pointer]:
+              - /url: "?token=69b8c69a673da43b54870064"
+              - generic [ref=e46]: 
+              - strong [ref=e48]: Viễn thám
+          - listitem [ref=e49]:
+            - link " Thông báo" [ref=e50] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e51]:
+                - generic [ref=e52]: 
+                - generic [ref=e53]: Thông báo
+            - text: 
+          - listitem
+          - listitem [ref=e54]:
+            - link " None" [expanded] [ref=e55] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e56]: 
+              - strong [ref=e58]:
+                - generic [ref=e59]: None
+      - iframe [ref=e64]:
+        - generic [active] [ref=f9e1]:
+          - generic [ref=f9e5]:
+            - generic [ref=f9e7]:
+              - generic [ref=f9e8]:
+                - text: Tỉnh/ Thành phố
+                - generic [ref=f9e9] [cursor=pointer]:
+                  - generic [ref=f9e11]:
+                    - combobox [ref=f9e13]
+                    - generic: Tỉnh/ Thành phố
+                  - generic:
+                    - img:
+                      - img
+              - generic [ref=f9e14]:
+                - text: Nhóm trạm
+                - generic [ref=f9e15] [cursor=pointer]:
+                  - generic [ref=f9e17]:
+                    - combobox [ref=f9e19]
+                    - generic: Nhóm trạm
+                  - generic:
+                    - img:
+                      - img
+              - generic [ref=f9e20]:
+                - text: Trạng thái sử dụng
+                - generic [ref=f9e21] [cursor=pointer]:
+                  - generic [ref=f9e23]:
+                    - combobox [ref=f9e25]
+                    - generic: Trạng thái sử dụng
+                  - generic:
+                    - img:
+                      - img
+              - generic [ref=f9e26]:
+                - text: Doanh nghiệp
+                - generic [ref=f9e27] [cursor=pointer]:
+                  - generic [ref=f9e29]:
+                    - combobox [ref=f9e31]
+                    - generic: Doanh nghiệp
+                  - generic:
+                    - img:
+                      - img
+              - button "search Tìm kiếm" [ref=f9e33] [cursor=pointer]:
+                - img "search" [ref=f9e35]:
+                  - img [ref=f9e36]
+                - generic [ref=f9e38]: Tìm kiếm
+            - generic [ref=f9e40]:
+              - generic [ref=f9e44]:
+                - img "schedule" [ref=f9e45]:
+                  - img [ref=f9e46]
+                - text: THỐNG KÊ TỔNG HỢP
+              - generic [ref=f9e49]:
+                - generic [ref=f9e52]:
+                  - generic [ref=f9e53]: Σ Tổng trạm
+                  - generic [ref=f9e54]: "2879"
+                - generic [ref=f9e56]:
+                  - generic [ref=f9e58]:
+                    - generic [ref=f9e59]:
+                      - img [ref=f9e60]
+                      - text: Đang kết nối
+                    - generic [ref=f9e63]: "2220"
+                  - generic [ref=f9e65]:
+                    - generic [ref=f9e66]:
+                      - img [ref=f9e67]
+                      - text: Mất kết nối
+                    - generic [ref=f9e70]: "659"
+            - generic [ref=f9e72]:
+              - generic [ref=f9e76]:
+                - img "dashboard" [ref=f9e78]:
+                  - img [ref=f9e79]
+                - generic [ref=f9e81]: THỐNG KÊ TỔNG SỐ TRẠM TỔNG QUAN
+              - generic [ref=f9e82]:
+                - generic [ref=f9e85]:
+                  - generic [ref=f9e87]:
+                    - img [ref=f9e90]:
+                      - generic [ref=f9e92]:
+                        - img [ref=f9e94]
+                        - img [ref=f9e96]
+                        - img [ref=f9e98]
+                        - img [ref=f9e100]
+                        - img [ref=f9e102]
+                      - generic [ref=f9e103]: "2879"
+                      - generic [ref=f9e104]: Tổng trạm
+                    - generic [ref=f9e105]:
+                      - generic [ref=f9e106]:
+                        - img "arrow-up" [ref=f9e107]:
+                          - img [ref=f9e108]
+                        - text: "5"
+                      - paragraph [ref=f9e110]: so với hôm qua
+                  - generic [ref=f9e112]:
+                    - generic [ref=f9e114] [cursor=pointer]:
+                      - generic [ref=f9e115]: Đang kết nối
+                      - generic [ref=f9e116]: "2220"
+                    - generic [ref=f9e119] [cursor=pointer]:
+                      - generic [ref=f9e120]: Đạt QCVN
+                      - generic [ref=f9e121]: "1855"
+                    - generic [ref=f9e124] [cursor=pointer]:
+                      - generic [ref=f9e125]: Hiệu chuẩn
+                      - generic [ref=f9e126]: "42"
+                    - generic [ref=f9e129] [cursor=pointer]:
+                      - generic [ref=f9e130]: Vượt QCVN
+                      - generic [ref=f9e131]: "127"
+                    - generic [ref=f9e134] [cursor=pointer]:
+                      - generic [ref=f9e135]: Lỗi thiết bị
+                      - generic [ref=f9e136]: "196"
+                    - generic [ref=f9e138] [cursor=pointer]:
+                      - generic [ref=f9e139]: Mất kết nối
+                      - generic [ref=f9e140]: "659"
+                    - generic [ref=f9e142]:
+                      - generic [ref=f9e143]: Tổng
+                      - generic [ref=f9e144]: "2879"
+                - generic [ref=f9e145]:
+                  - generic [ref=f9e146]: Số lượng trạm mới thay đổi so với ngày hôm qua
+                  - generic [ref=f9e152]:
+                    - text: Quảng Trị
+                    - generic [ref=f9e153]:
+                      - img "arrow-up" [ref=f9e154]:
+                        - img [ref=f9e155]
+                      - text: "5"
+            - generic [ref=f9e158]:
+              - generic [ref=f9e162]:
+                - img "dashboard" [ref=f9e164]:
+                  - img [ref=f9e165]
+                - generic [ref=f9e167]: DANH SÁCH TRẠM THEO TRẠNG THÁI
+              - table [ref=f9e176]:
+                - rowgroup [ref=f9e185]:
+                  - row "Tổng Mất kết nối Đạt QCVN Hiệu chuẩn Vượt QCVN Lỗi thiết bị" [ref=f9e186]:
+                    - columnheader [ref=f9e187]
+                    - columnheader "Tổng" [ref=f9e188]
+                    - columnheader "Mất kết nối" [ref=f9e189]
+                    - columnheader "Đạt QCVN" [ref=f9e190]
+                    - columnheader "Hiệu chuẩn" [ref=f9e191]
+                    - columnheader "Vượt QCVN" [ref=f9e192]
+                    - columnheader "Lỗi thiết bị" [ref=f9e193]
+                - rowgroup [ref=f9e194]:
+                  - row "Tổng 2879 659 1855 42 127 196" [ref=f9e195]:
+                    - cell "Tổng" [ref=f9e196]
+                    - cell "2879" [ref=f9e197]
+                    - cell "659" [ref=f9e198]
+                    - cell "1855" [ref=f9e199]
+                    - cell "42" [ref=f9e200]
+                    - cell "127" [ref=f9e201]
+                    - cell "196" [ref=f9e202]
+                  - row "Nước ngầm (NN) 79 9 65 0 1 4" [ref=f9e203]:
+                    - cell "Nước ngầm (NN)" [ref=f9e204]
+                    - cell "79" [ref=f9e205]
+                    - cell "9" [ref=f9e206]
+                    - cell "65" [ref=f9e207]
+                    - cell "0" [ref=f9e208]
+                    - cell "1" [ref=f9e209]
+                    - cell "4" [ref=f9e210]
+                  - row "Trầm tích (TT) 0 0 0 0 0 0" [ref=f9e211]:
+                    - cell "Trầm tích (TT)" [ref=f9e212]
+                    - cell "0" [ref=f9e213]
+                    - cell "0" [ref=f9e214]
+                    - cell "0" [ref=f9e215]
+                    - cell "0" [ref=f9e216]
+                    - cell "0" [ref=f9e217]
+                    - cell "0" [ref=f9e218]
+                  - row "Nước biển (NB) 8 0 6 0 0 2" [ref=f9e219]:
+                    - cell "Nước biển (NB)" [ref=f9e220]
+                    - cell "8" [ref=f9e221]
+                    - cell "0" [ref=f9e222]
+                    - cell "6" [ref=f9e223]
+                    - cell "0" [ref=f9e224]
+                    - cell "0" [ref=f9e225]
+                    - cell "2" [ref=f9e226]
+                  - row "Không khí (KK) 160 18 63 1 13 65" [ref=f9e227]:
+                    - cell "Không khí (KK)" [ref=f9e228]
+                    - cell "160" [ref=f9e229]
+                    - cell "18" [ref=f9e230]
+                    - cell "63" [ref=f9e231]
+                    - cell "1" [ref=f9e232]
+                    - cell "13" [ref=f9e233]
+                    - cell "65" [ref=f9e234]
+                  - row "Khí thải (KT) 990 274 638 22 23 33" [ref=f9e235]:
+                    - cell "Khí thải (KT)" [ref=f9e236]
+                    - cell "990" [ref=f9e237]
+                    - cell "274" [ref=f9e238]
+                    - cell "638" [ref=f9e239]
+                    - cell "22" [ref=f9e240]
+                    - cell "23" [ref=f9e241]
+                    - cell "33" [ref=f9e242]
+                  - row "Nước mặt (NM) 275 61 138 0 38 38" [ref=f9e243]:
+                    - cell "Nước mặt (NM)" [ref=f9e244]
+                    - cell "275" [ref=f9e245]
+                    - cell "61" [ref=f9e246]
+                    - cell "138" [ref=f9e247]
+                    - cell "0" [ref=f9e248]
+                    - cell "38" [ref=f9e249]
+                    - cell "38" [ref=f9e250]
+                  - row "Tham khảo (KK) 10 4 5 0 1 0" [ref=f9e251]:
+                    - cell "Tham khảo (KK)" [ref=f9e252]
+                    - cell "10" [ref=f9e253]
+                    - cell "4" [ref=f9e254]
+                    - cell "5" [ref=f9e255]
+                    - cell "0" [ref=f9e256]
+                    - cell "1" [ref=f9e257]
+                    - cell "0" [ref=f9e258]
+                  - row "Nước thải (NT) 1357 293 940 19 51 54" [ref=f9e259]:
+                    - cell "Nước thải (NT)" [ref=f9e260]
+                    - cell "1357" [ref=f9e261]
+                    - cell "293" [ref=f9e262]
+                    - cell "940" [ref=f9e263]
+                    - cell "19" [ref=f9e264]
+                    - cell "51" [ref=f9e265]
+                    - cell "54" [ref=f9e266]
+            - generic [ref=f9e267]:
+              - generic [ref=f9e268]:
+                - generic [ref=f9e270]:
+                  - generic [ref=f9e272]:
+                    - img "dashboard" [ref=f9e274]:
+                      - img [ref=f9e275]
+                    - generic [ref=f9e277]: PHÂN BỐ CÁC TRẠM
+                  - generic [ref=f9e279]:
+                    - img "download" [ref=f9e281] [cursor=pointer]:
+                      - img [ref=f9e282]
+                    - button "arrow-up" [ref=f9e285] [cursor=pointer]:
+                      - img "arrow-up" [ref=f9e287]:
+                        - img [ref=f9e288]
+                - generic [ref=f9e291]:
+                  - generic [ref=f9e292]:
+                    - button "Toàn quốc" [ref=f9e293] [cursor=pointer]:
+                      - generic [ref=f9e294]: Toàn quốc
+                    - button "Miền Bắc" [ref=f9e295] [cursor=pointer]:
+                      - generic [ref=f9e296]: Miền Bắc
+                    - button "Miền Trung" [ref=f9e297] [cursor=pointer]:
+                      - generic [ref=f9e298]: Miền Trung
+                    - button "Miền Nam" [ref=f9e299] [cursor=pointer]:
+                      - generic [ref=f9e300]: Miền Nam
+                  - generic [ref=f9e302]:
+                    - img [ref=f9e303]:
+                      - generic [ref=f9e309]:
+                        - generic [ref=f9e311]: An Giang
+                        - generic [ref=f9e313]: Bắc Ninh
+                        - generic [ref=f9e315]: Cà Mau
+                        - generic [ref=f9e317]: Cao Bằng
+                        - generic [ref=f9e319]: Cần Thơ
+                        - generic [ref=f9e321]: Ðà Nẵng
+                        - generic [ref=f9e323]: Ðắk Lắk
+                        - generic [ref=f9e325]: Ðồng Nai
+                        - generic [ref=f9e327]: Ðồng Tháp
+                        - generic [ref=f9e329]: Gia Lai
+                        - generic [ref=f9e331]: Hà Tĩnh
+                        - generic [ref=f9e333]: Hải Phòng
+                        - generic [ref=f9e335]: Hưng Yên
+                        - generic [ref=f9e337]: Khánh Hoà
+                        - generic [ref=f9e339]: Lai Châu
+                        - generic [ref=f9e341]: Lạng Sơn
+                        - generic [ref=f9e343]: Lào Cai
+                        - generic [ref=f9e345]: Lâm Ðồng
+                        - generic [ref=f9e347]: Nghệ An
+                        - generic [ref=f9e349]: Ninh Bình
+                        - generic [ref=f9e351]: Phú Thọ
+                        - generic [ref=f9e353]: Quảng Ngãi
+                        - generic [ref=f9e355]: Quảng Ninh
+                        - generic [ref=f9e357]: Quảng Trị
+                        - generic [ref=f9e359]: Sơn La
+                        - generic [ref=f9e361]: Tây Ninh
+                        - generic [ref=f9e363]: Thái Nguyên
+                        - generic [ref=f9e365]: Thanh Hoá
+                        - generic [ref=f9e367]: TP. Hà Nội
+                        - generic [ref=f9e369]: Tp. Hồ Chí Minh
+                        - generic [ref=f9e371]: TP. Huế
+                        - generic [ref=f9e373]: Trung tâm QTMB
+                        - generic [ref=f9e375]: Tuyên Quang
+                        - generic [ref=f9e377]: Vĩnh Long
+                      - generic [ref=f9e378]:
+                        - generic [ref=f9e379]:
+                          - generic [ref=f9e381]: "0"
+                          - generic [ref=f9e383]: "150"
+                          - generic [ref=f9e385]: "300"
+                          - generic [ref=f9e387]: "454"
+                        - generic [ref=f9e388]: SỐ LƯỢNG TRẠM
+                    - generic [ref=f9e679]:
+                      - generic [ref=f9e682]: Mất kết nối
+                      - generic [ref=f9e685]: Đạt QCVN
+                      - generic [ref=f9e688]: Hiệu chuẩn
+                      - generic [ref=f9e691]: Vượt QCVN
+                      - generic [ref=f9e694]: Lỗi thiết bị
+              - generic [ref=f9e695]:
+                - generic [ref=f9e697]:
+                  - generic [ref=f9e699]:
+                    - img "dashboard" [ref=f9e701]:
+                      - img [ref=f9e702]
+                    - generic [ref=f9e704]: TRẠM THEO THÀNH PHẦN MÔI TRƯỜNG
+                  - generic [ref=f9e706]:
+                    - img "download" [ref=f9e708] [cursor=pointer]:
+                      - img [ref=f9e709]
+                    - button "arrow-up" [ref=f9e712] [cursor=pointer]:
+                      - img "arrow-up" [ref=f9e714]:
+                        - img [ref=f9e715]
+                - generic [ref=f9e719]:
+                  - tablist [ref=f9e720]:
+                    - generic [ref=f9e722]:
+                      - tab "Nước thải (NT)" [ref=f9e724] [cursor=pointer]
+                      - tab "Nước mặt (NM)" [ref=f9e726] [cursor=pointer]
+                      - tab "Không khí (KK)" [selected] [ref=f9e728] [cursor=pointer]
+                      - tab "Khí thải (KT)" [ref=f9e730] [cursor=pointer]
+                      - tab "Tham khảo (KK)" [ref=f9e732] [cursor=pointer]
+                      - tab "Nước ngầm (NN)" [ref=f9e734] [cursor=pointer]
+                      - tab "Trầm tích (TT)" [ref=f9e736] [cursor=pointer]
+                      - tab "Nước biển (NB)" [ref=f9e738] [cursor=pointer]
+                  - tabpanel "Không khí (KK)" [ref=f9e741]:
+                    - generic [ref=f9e742]:
+                      - generic [ref=f9e744]:
+                        - generic [ref=f9e745] [cursor=pointer]:
+                          - generic [ref=f9e747]:
+                            - combobox [ref=f9e749]
+                            - generic: Chọn trạng thái trạm
+                          - generic:
+                            - img:
+                              - img
+                        - textbox "Tìm kiếm" [ref=f9e751]
+                        - list [ref=f9e757]:
+                          - listitem [ref=f9e758] [cursor=pointer]:
+                            - generic [ref=f9e759]: Trạm KKXQ Đình Vũ
+                          - listitem [ref=f9e762] [cursor=pointer]:
+                            - generic [ref=f9e763]: "Hải Phòng: Trạm KKXQ Deep C (KK)"
+                          - listitem [ref=f9e766] [cursor=pointer]:
+                            - generic [ref=f9e767]: "Hải Phòng: Trạm KKXQ Hồng Bàng (KK)"
+                          - listitem [ref=f9e770] [cursor=pointer]:
+                            - generic [ref=f9e771]: Trạm KKXQ Mỹ Đồng
+                          - listitem [ref=f9e774] [cursor=pointer]:
+                            - generic [ref=f9e775]: Trạm KKXQ Minh Đức
+                          - listitem [ref=f9e778] [cursor=pointer]:
+                            - generic [ref=f9e779]: Trạm KKXQ Quán Toan
+                          - listitem [ref=f9e782] [cursor=pointer]:
+                            - generic [ref=f9e783]: Trạm Cổ Dũng - Kim Thành
+                          - listitem [ref=f9e786] [cursor=pointer]:
+                            - generic [ref=f9e787]: Trạm An Lưu - Kinh môn
+                          - listitem [ref=f9e790] [cursor=pointer]:
+                            - generic [ref=f9e791]: Trạm Duy Tân - Kinh Môn
+                          - listitem [ref=f9e794] [cursor=pointer]:
+                            - generic [ref=f9e795]: Trạm Sao Đỏ - TP Chí Linh
+                          - listitem [ref=f9e798] [cursor=pointer]:
+                            - generic [ref=f9e799]: Trạm Phả Lại-Chí Linh
+                          - listitem [ref=f9e802] [cursor=pointer]:
+                            - generic [ref=f9e803]: Trạm Phú Thái-Kim Thành
+                          - listitem [ref=f9e806] [cursor=pointer]:
+                            - generic [ref=f9e807]: Trạm Lai Cách_Cẩm Giàng
+                          - listitem [ref=f9e810] [cursor=pointer]:
+                            - generic [ref=f9e811]: "Hải Dương: Trạm Kẻ Sặt_Bình Giang (KK)"
+                          - listitem [ref=f9e814] [cursor=pointer]:
+                            - generic [ref=f9e815]: Trạm Minh Tân-Kinh Môn
+                          - listitem [ref=f9e818] [cursor=pointer]:
+                            - generic [ref=f9e819]: Trạm Tân Bình-TPHD
+                          - listitem [ref=f9e822] [cursor=pointer]:
+                            - generic [ref=f9e823]: Trạm quan trắc không khí tự động Thống Nhất Pleiku (KK)
+                          - listitem [ref=f9e826] [cursor=pointer]:
+                            - generic [ref=f9e827]: Trạm quan trắc không khí tự động An Khê (KK)
+                          - listitem [ref=f9e830] [cursor=pointer]:
+                            - generic [ref=f9e831]: Trạm quan trắc không khí tự động Trà Đa (KK)
+                          - listitem [ref=f9e834] [cursor=pointer]:
+                            - generic [ref=f9e835]: Trạm quan trắc không khí tự động Chư Sê (KK)
+                          - listitem [ref=f9e838] [cursor=pointer]:
+                            - generic [ref=f9e839]: Trạm quan trắc không khí tự động Diên Phú (KK)
+                          - listitem [ref=f9e842] [cursor=pointer]:
+                            - generic [ref=f9e843]: Trạm không khí tự động huyện Đức Cơ (KK)
+                          - listitem [ref=f9e846] [cursor=pointer]:
+                            - generic [ref=f9e847]: Trạm không khí tự động huyện Ia Grai (KK)
+                          - listitem [ref=f9e850] [cursor=pointer]:
+                            - generic [ref=f9e851]: Trạm quan trắc không khí xung quanh Tuy Phước
+                          - listitem [ref=f9e854] [cursor=pointer]:
+                            - generic [ref=f9e855]: Trạm quan trắc không khí xung quanh Hoài Nhơn
+                          - listitem [ref=f9e858] [cursor=pointer]:
+                            - generic [ref=f9e859]: Bỉm Sơn AQMS
+                          - listitem [ref=f9e862] [cursor=pointer]:
+                            - generic [ref=f9e863]: Nghi Sơn AQMS
+                          - listitem [ref=f9e866] [cursor=pointer]:
+                            - generic [ref=f9e867]: Trạm khí xung quanh KCN Thăng long II
+                          - listitem [ref=f9e870] [cursor=pointer]:
+                            - generic [ref=f9e871]: Trạm khí Nhà văn hóa xã Tân Quang(Văn Lâm)
+                          - listitem [ref=f9e874] [cursor=pointer]:
+                            - generic [ref=f9e875]: "Thái Bình: xã Thái Thọ, huyện Thái Thụy (KK)"
+                          - listitem [ref=f9e878] [cursor=pointer]:
+                            - generic [ref=f9e879]: "Khánh Hòa: Công ty cổ phần năng lượng Ami (Tram 2)"
+                          - listitem [ref=f9e882] [cursor=pointer]:
+                            - generic [ref=f9e883]: "Khánh Hòa: Trạm Không khí xung quanh Lương Hoà (KK)"
+                          - listitem [ref=f9e886] [cursor=pointer]:
+                            - generic [ref=f9e887]: "Khánh Hòa: Trạm không khí xung quanh Ninh An (KK)"
+                          - listitem [ref=f9e890] [cursor=pointer]:
+                            - generic [ref=f9e891]: "Khánh Hòa: Điện mặt trời miền trung (Trạm 1)"
+                          - listitem [ref=f9e894] [cursor=pointer]:
+                            - generic [ref=f9e895]: Công ty Cổ phần Năng lượng Long Sơn (trạm 1)
+                          - listitem [ref=f9e898] [cursor=pointer]:
+                            - generic [ref=f9e899]: Công ty Cổ phần Năng lượng Long Sơn (trạm 2)
+                          - listitem [ref=f9e902] [cursor=pointer]:
+                            - generic [ref=f9e903]: Công ty Cổ phần Năng lượng Long Sơn (trạm 3)
+                          - listitem [ref=f9e906] [cursor=pointer]:
+                            - generic [ref=f9e907]: "Khánh Hòa: Điện mặt trời Sông Giang 1 (KK)"
+                          - listitem [ref=f9e910] [cursor=pointer]:
+                            - generic [ref=f9e911]: "Khánh Hòa: Điện mặt trời Sông Giang 2 (KK)"
+                          - listitem [ref=f9e914] [cursor=pointer]:
+                            - generic [ref=f9e915]: "Khánh Hòa: Điện mặt trời miền trung (Trạm 2)"
+                          - listitem [ref=f9e918] [cursor=pointer]:
+                            - generic [ref=f9e919]: "Khánh Hòa: Công ty cổ phần năng lượng Ami (Tram 1)"
+                          - listitem [ref=f9e922] [cursor=pointer]:
+                            - generic [ref=f9e923]: "Khánh Hòa: Diện mặt trời KN Cam Lâm"
+                          - listitem [ref=f9e926] [cursor=pointer]:
+                            - generic [ref=f9e927]: ĐMT Trung Sơn - Trạm 1 (KK)
+                          - listitem [ref=f9e930] [cursor=pointer]:
+                            - generic [ref=f9e931]: ĐMT Trung Sơn - Trạm 2 (KK)
+                          - listitem [ref=f9e934] [cursor=pointer]:
+                            - generic [ref=f9e935]: Trạm khí tượng thủy văn Ba Ngòi
+                          - listitem [ref=f9e938] [cursor=pointer]:
+                            - generic [ref=f9e939]: KXQ - Đức Lập Hạ (KK)
+                          - listitem [ref=f9e942] [cursor=pointer]:
+                            - generic [ref=f9e943]: KXQ - Bến Lức (KK)
+                          - listitem [ref=f9e946] [cursor=pointer]:
+                            - generic [ref=f9e947]: KXQ - Cần Giuộc (KK)
+                          - listitem [ref=f9e950] [cursor=pointer]:
+                            - generic [ref=f9e951]: "Đà Nẵng_(KKXQ): Nhà văn hóa quận Ngũ Hành Sơn"
+                          - listitem [ref=f9e954] [cursor=pointer]:
+                            - generic [ref=f9e955]: "Đà Nẵng: Phạm Hùng (KK)"
+                      - generic [ref=f9e958]:
+                        - main
+              - generic [ref=f9e959]:
+                - generic [ref=f9e961]:
+                  - generic [ref=f9e963]:
+                    - img "dashboard" [ref=f9e965]:
+                      - img [ref=f9e966]
+                    - generic [ref=f9e968]: CHỈ SỐ AQI
+                  - generic [ref=f9e970]:
+                    - img "download" [ref=f9e972] [cursor=pointer]:
+                      - img [ref=f9e973]
+                    - button "arrow-up" [ref=f9e976] [cursor=pointer]:
+                      - img "arrow-up" [ref=f9e978]:
+                        - img [ref=f9e979]
+                - generic [ref=f9e983]:
+                  - generic [ref=f9e987]:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - table:
+                              - rowgroup:
+                                - row "Trạm Thời gian Giá trị AQI Chất lượng không khí":
+                                  - columnheader "Trạm"
+                                  - columnheader "Thời gian"
+                                  - columnheader "Giá trị AQI"
+                                  - columnheader "Chất lượng không khí"
+                              - rowgroup:
+                                - row "No data No data":
+                                  - cell "No data No data":
+                                    - generic:
+                                      - generic:
+                                        - generic:
+                                          - img "No data"
+                                        - generic: No data
+                  - generic [ref=f9e998]:
+                    - generic [ref=f9e999]: NaN
+                    - generic:
+                      - paragraph
+          - generic [ref=f9e1001]: "454"
+      - generic [ref=e65]:
+        - link "Liên hệ" [ref=e67] [cursor=pointer]:
+          - /url: ""
+          - strong [ref=e69]: Liên hệ
+        - generic [ref=e70]: CỤC MÔI TRƯỜNG - BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG © 2018

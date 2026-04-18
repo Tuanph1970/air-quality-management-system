@@ -639,7 +639,7 @@ class EnvisoftClient:
             List of normalized data records ready for DB insertion.
         """
         # ── Full setup: login + navigate + pre-select (one browser session) ───
-        await self._start()
+        await self.start()
         await self._login_via_iframe()
         await self._navigate_to_data_page()
         await self._pre_select_province_and_data_type()

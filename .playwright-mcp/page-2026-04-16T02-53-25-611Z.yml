@@ -1,0 +1,390 @@
+- generic [ref=e1]:
+  - banner: 
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - list [ref=e5]:
+        - listitem [ref=e6]:
+          - img [ref=e7]
+        - listitem [ref=e8]:
+          - link "Trang chủ" [ref=e9] [cursor=pointer]:
+            - /url: /eos/dashboard/index?qttd=True
+            - img [ref=e10]
+            - text: Trang chủ
+        - listitem [ref=e11]:
+          - link "Giám sát trực tuyến" [ref=e12] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e13]
+            - text: Giám sát trực tuyến
+        - listitem [ref=e14]:
+          - link "Tra cứu dữ liệu" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e16]
+            - text: Tra cứu dữ liệu
+        - listitem [ref=e17]:
+          - link "Báo cáo" [ref=e18] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e19]
+            - text: Báo cáo
+          - text:   
+        - listitem [ref=e20]:
+          - link "Thống kê" [ref=e21] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e22]
+            - text: Thống kê
+          - text:    
+        - listitem [ref=e23]:
+          - text:   
+          - link "Cài đặt" [ref=e24] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e25]
+            - text: Cài đặt
+    - generic [ref=e26]:
+      - navigation [ref=e28]:
+        - generic [ref=e30]:
+          - heading "BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG" [level=5] [ref=e31]
+          - heading "PHẦN MỀM QUẢN LÝ DỮ LIỆU QUAN TRẮC" [level=5] [ref=e32]
+        - list [ref=e33]:
+          - listitem [ref=e34]:
+            - link " Định kỳ" [expanded] [ref=e35] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qtdk=True
+              - generic [ref=e36]: 
+              - strong [ref=e38]: Định kỳ
+          - listitem [ref=e39]:
+            - link " Tự động" [expanded] [ref=e40] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qttd=True
+              - generic [ref=e41]: 
+              - strong [ref=e43]: Tự động
+          - listitem [ref=e44]:
+            - link " Viễn thám" [expanded] [ref=e45] [cursor=pointer]:
+              - /url: "?token=69b8c69a673da43b54870064"
+              - generic [ref=e46]: 
+              - strong [ref=e48]: Viễn thám
+          - listitem [ref=e49]:
+            - link " Thông báo" [ref=e50] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e51]:
+                - generic [ref=e52]: 
+                - generic [ref=e53]: Thông báo
+            - text: 
+          - listitem
+          - listitem [ref=e54]:
+            - link " None" [expanded] [ref=e55] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e56]: 
+              - strong [ref=e58]:
+                - generic [ref=e59]: None
+      - generic [ref=e60]:
+        - generic [ref=e62]:
+          - heading "DỮ LIỆU TRUNG BÌNH THEO THỜI GIAN" [level=2] [ref=e63]
+          - list [ref=e64]:
+            - listitem [ref=e65]: Trang chủ
+            - listitem [ref=e66]: / Tra cứu dữ liệu
+            - listitem [ref=e67]:
+              - text: /
+              - strong [ref=e68]: Dữ liệu trung bình theo thời gian
+        - iframe [active] [ref=e73]:
+          - generic [ref=f10e1]:
+            - main [ref=f10e12]:
+              - generic [ref=f10e13]:
+                - generic [ref=f10e15] [cursor=pointer]:
+                  - generic [ref=f10e17]:
+                    - combobox [ref=f10e19]
+                    - generic: "- Dữ liệu theo phút -"
+                  - generic:
+                    - img:
+                      - img
+                - generic [ref=f10e21] [cursor=pointer]:
+                  - generic [ref=f10e23]:
+                    - combobox [ref=f10e25]
+                    - generic "TP. Hà Nội" [ref=f10e206]
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f10e203]:
+                    - img [ref=f10e204]
+                - generic [ref=f10e27] [cursor=pointer]:
+                  - generic [ref=f10e29]:
+                    - combobox [ref=f10e31]
+                    - 'generic "Hà Nội: 556 Nguyễn Văn Cừ (KK)" [ref=f10e224]'
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f10e226]:
+                    - img [ref=f10e227]
+                - generic [ref=f10e33] [cursor=pointer]:
+                  - generic [ref=f10e35]:
+                    - combobox [ref=f10e37]
+                    - generic: "- Dữ liệu nguyên gốc -"
+                  - generic:
+                    - img:
+                      - img
+                - generic [ref=f10e39] [cursor=pointer]:
+                  - generic [ref=f10e41]:
+                    - combobox [ref=f10e43]
+                    - generic "Không khí (KK)" [ref=f10e160]
+                  - generic:
+                    - img:
+                      - img
+                  - img [ref=f10e162]:
+                    - img [ref=f10e163]
+                - generic [ref=f10e45]:
+                  - textbox "Start date" [active] [ref=f10e47]
+                  - generic "to" [ref=f10e49]:
+                    - img "swap-right" [ref=f10e50]:
+                      - img [ref=f10e51]
+                  - textbox "End date" [ref=f10e54]
+                  - generic:
+                    - img "calendar":
+                      - img
+                - generic [ref=f10e56] [cursor=pointer]:
+                  - checkbox "So sánh dữ liệu vượt quy chuẩn" [ref=f10e58]
+                  - generic [ref=f10e60]: So sánh dữ liệu vượt quy chuẩn
+                - generic [ref=f10e62]:
+                  - generic [ref=f10e65]: Đạt QCVN
+                  - generic [ref=f10e68]: Vượt QCVN
+                - button "XUẤT FILE" [ref=f10e71] [cursor=pointer]:
+                  - generic [ref=f10e72]: XUẤT FILE
+              - button "collapsed Chọn thông số" [ref=f10e75] [cursor=pointer]:
+                - img "collapsed" [ref=f10e77]:
+                  - img [ref=f10e78]
+                - generic [ref=f10e80]: Chọn thông số
+              - generic [ref=f10e81]:
+                - tablist [ref=f10e82]:
+                  - generic [ref=f10e84]:
+                    - tab "Dữ liệu" [selected] [ref=f10e86] [cursor=pointer]
+                    - tab "Min/Max/Trung bình" [ref=f10e88] [cursor=pointer]
+                    - tab "Biểu đồ" [ref=f10e90] [cursor=pointer]
+                - tabpanel "Dữ liệu" [ref=f10e93]:
+                  - table [ref=f10e102]:
+                    - rowgroup [ref=f10e105]:
+                      - row "TT THỜI GIAN ĐO" [ref=f10e106]:
+                        - columnheader "TT" [ref=f10e107]
+                        - columnheader "THỜI GIAN ĐO" [ref=f10e108]
+                    - rowgroup [ref=f10e109]:
+                      - row "No data No data" [ref=f10e110]:
+                        - cell "No data No data" [ref=f10e111]:
+                          - generic [ref=f10e113]:
+                            - img "No data" [ref=f10e115]
+                            - generic [ref=f10e121]: No data
+            - generic [ref=f10e232]:
+              - generic [ref=f10e234]:
+                - generic [ref=f10e235]:
+                  - button "super-prev-year" [ref=f10e236] [cursor=pointer]
+                  - button "prev-year" [ref=f10e238] [cursor=pointer]
+                  - generic [ref=f10e240]:
+                    - button "month panel" [ref=f10e241] [cursor=pointer]: Apr
+                    - button "year panel" [ref=f10e242] [cursor=pointer]: "2026"
+                - table [ref=f10e244]:
+                  - rowgroup [ref=f10e245]:
+                    - row "Su Mo Tu We Th Fr Sa" [ref=f10e246]:
+                      - columnheader "Su" [ref=f10e247]
+                      - columnheader "Mo" [ref=f10e248]
+                      - columnheader "Tu" [ref=f10e249]
+                      - columnheader "We" [ref=f10e250]
+                      - columnheader "Th" [ref=f10e251]
+                      - columnheader "Fr" [ref=f10e252]
+                      - columnheader "Sa" [ref=f10e253]
+                  - rowgroup [ref=f10e254]:
+                    - row "29 30 31 1 2 3 4" [ref=f10e255]:
+                      - cell "29" [ref=f10e256] [cursor=pointer]:
+                        - generic [ref=f10e257]: "29"
+                      - cell "30" [ref=f10e258] [cursor=pointer]:
+                        - generic [ref=f10e259]: "30"
+                      - cell "31" [ref=f10e260] [cursor=pointer]:
+                        - generic [ref=f10e261]: "31"
+                      - cell "1" [ref=f10e262] [cursor=pointer]:
+                        - generic [ref=f10e263]: "1"
+                      - cell "2" [ref=f10e264] [cursor=pointer]:
+                        - generic [ref=f10e265]: "2"
+                      - cell "3" [ref=f10e266] [cursor=pointer]:
+                        - generic [ref=f10e267]: "3"
+                      - cell "4" [ref=f10e268] [cursor=pointer]:
+                        - generic [ref=f10e269]: "4"
+                    - row "5 6 7 8 9 10 11" [ref=f10e270]:
+                      - cell "5" [ref=f10e271] [cursor=pointer]:
+                        - generic [ref=f10e272]: "5"
+                      - cell "6" [ref=f10e273] [cursor=pointer]:
+                        - generic [ref=f10e274]: "6"
+                      - cell "7" [ref=f10e275] [cursor=pointer]:
+                        - generic [ref=f10e276]: "7"
+                      - cell "8" [ref=f10e277] [cursor=pointer]:
+                        - generic [ref=f10e278]: "8"
+                      - cell "9" [ref=f10e279] [cursor=pointer]:
+                        - generic [ref=f10e280]: "9"
+                      - cell "10" [ref=f10e281] [cursor=pointer]:
+                        - generic [ref=f10e282]: "10"
+                      - cell "11" [ref=f10e283] [cursor=pointer]:
+                        - generic [ref=f10e284]: "11"
+                    - row "12 13 14 15 16 17 18" [ref=f10e285]:
+                      - cell "12" [ref=f10e286] [cursor=pointer]:
+                        - generic [ref=f10e287]: "12"
+                      - cell "13" [ref=f10e288] [cursor=pointer]:
+                        - generic [ref=f10e289]: "13"
+                      - cell "14" [ref=f10e290] [cursor=pointer]:
+                        - generic [ref=f10e291]: "14"
+                      - cell "15" [ref=f10e292] [cursor=pointer]:
+                        - generic [ref=f10e293]: "15"
+                      - cell "16" [ref=f10e294] [cursor=pointer]:
+                        - generic [ref=f10e295]: "16"
+                      - cell "17" [ref=f10e296] [cursor=pointer]:
+                        - generic [ref=f10e297]: "17"
+                      - cell "18" [ref=f10e298] [cursor=pointer]:
+                        - generic [ref=f10e299]: "18"
+                    - row "19 20 21 22 23 24 25" [ref=f10e300]:
+                      - cell "19" [ref=f10e301] [cursor=pointer]:
+                        - generic [ref=f10e302]: "19"
+                      - cell "20" [ref=f10e303] [cursor=pointer]:
+                        - generic [ref=f10e304]: "20"
+                      - cell "21" [ref=f10e305] [cursor=pointer]:
+                        - generic [ref=f10e306]: "21"
+                      - cell "22" [ref=f10e307] [cursor=pointer]:
+                        - generic [ref=f10e308]: "22"
+                      - cell "23" [ref=f10e309] [cursor=pointer]:
+                        - generic [ref=f10e310]: "23"
+                      - cell "24" [ref=f10e311] [cursor=pointer]:
+                        - generic [ref=f10e312]: "24"
+                      - cell "25" [ref=f10e313] [cursor=pointer]:
+                        - generic [ref=f10e314]: "25"
+                    - row "26 27 28 29 30 1 2" [ref=f10e315]:
+                      - cell "26" [ref=f10e316] [cursor=pointer]:
+                        - generic [ref=f10e317]: "26"
+                      - cell "27" [ref=f10e318] [cursor=pointer]:
+                        - generic [ref=f10e319]: "27"
+                      - cell "28" [ref=f10e320] [cursor=pointer]:
+                        - generic [ref=f10e321]: "28"
+                      - cell "29" [ref=f10e322] [cursor=pointer]:
+                        - generic [ref=f10e323]: "29"
+                      - cell "30" [ref=f10e324] [cursor=pointer]:
+                        - generic [ref=f10e325]: "30"
+                      - cell "1" [ref=f10e326] [cursor=pointer]:
+                        - generic [ref=f10e327]: "1"
+                      - cell "2" [ref=f10e328] [cursor=pointer]:
+                        - generic [ref=f10e329]: "2"
+                    - row "3 4 5 6 7 8 9" [ref=f10e330]:
+                      - cell "3" [ref=f10e331] [cursor=pointer]:
+                        - generic [ref=f10e332]: "3"
+                      - cell "4" [ref=f10e333] [cursor=pointer]:
+                        - generic [ref=f10e334]: "4"
+                      - cell "5" [ref=f10e335] [cursor=pointer]:
+                        - generic [ref=f10e336]: "5"
+                      - cell "6" [ref=f10e337] [cursor=pointer]:
+                        - generic [ref=f10e338]: "6"
+                      - cell "7" [ref=f10e339] [cursor=pointer]:
+                        - generic [ref=f10e340]: "7"
+                      - cell "8" [ref=f10e341] [cursor=pointer]:
+                        - generic [ref=f10e342]: "8"
+                      - cell "9" [ref=f10e343] [cursor=pointer]:
+                        - generic [ref=f10e344]: "9"
+              - generic [ref=f10e346]:
+                - generic [ref=f10e347]:
+                  - generic [ref=f10e348]:
+                    - button "month panel" [ref=f10e349] [cursor=pointer]: May
+                    - button "year panel" [ref=f10e350] [cursor=pointer]: "2026"
+                  - button "next-year" [ref=f10e351] [cursor=pointer]
+                  - button "super-next-year" [ref=f10e353] [cursor=pointer]
+                - table [ref=f10e356]:
+                  - rowgroup [ref=f10e357]:
+                    - row "Su Mo Tu We Th Fr Sa" [ref=f10e358]:
+                      - columnheader "Su" [ref=f10e359]
+                      - columnheader "Mo" [ref=f10e360]
+                      - columnheader "Tu" [ref=f10e361]
+                      - columnheader "We" [ref=f10e362]
+                      - columnheader "Th" [ref=f10e363]
+                      - columnheader "Fr" [ref=f10e364]
+                      - columnheader "Sa" [ref=f10e365]
+                  - rowgroup [ref=f10e366]:
+                    - row "26 27 28 29 30 1 2" [ref=f10e367]:
+                      - cell "26" [ref=f10e368] [cursor=pointer]:
+                        - generic [ref=f10e369]: "26"
+                      - cell "27" [ref=f10e370] [cursor=pointer]:
+                        - generic [ref=f10e371]: "27"
+                      - cell "28" [ref=f10e372] [cursor=pointer]:
+                        - generic [ref=f10e373]: "28"
+                      - cell "29" [ref=f10e374] [cursor=pointer]:
+                        - generic [ref=f10e375]: "29"
+                      - cell "30" [ref=f10e376] [cursor=pointer]:
+                        - generic [ref=f10e377]: "30"
+                      - cell "1" [ref=f10e378] [cursor=pointer]:
+                        - generic [ref=f10e379]: "1"
+                      - cell "2" [ref=f10e380] [cursor=pointer]:
+                        - generic [ref=f10e381]: "2"
+                    - row "3 4 5 6 7 8 9" [ref=f10e382]:
+                      - cell "3" [ref=f10e383] [cursor=pointer]:
+                        - generic [ref=f10e384]: "3"
+                      - cell "4" [ref=f10e385] [cursor=pointer]:
+                        - generic [ref=f10e386]: "4"
+                      - cell "5" [ref=f10e387] [cursor=pointer]:
+                        - generic [ref=f10e388]: "5"
+                      - cell "6" [ref=f10e389] [cursor=pointer]:
+                        - generic [ref=f10e390]: "6"
+                      - cell "7" [ref=f10e391] [cursor=pointer]:
+                        - generic [ref=f10e392]: "7"
+                      - cell "8" [ref=f10e393] [cursor=pointer]:
+                        - generic [ref=f10e394]: "8"
+                      - cell "9" [ref=f10e395] [cursor=pointer]:
+                        - generic [ref=f10e396]: "9"
+                    - row "10 11 12 13 14 15 16" [ref=f10e397]:
+                      - cell "10" [ref=f10e398] [cursor=pointer]:
+                        - generic [ref=f10e399]: "10"
+                      - cell "11" [ref=f10e400] [cursor=pointer]:
+                        - generic [ref=f10e401]: "11"
+                      - cell "12" [ref=f10e402] [cursor=pointer]:
+                        - generic [ref=f10e403]: "12"
+                      - cell "13" [ref=f10e404] [cursor=pointer]:
+                        - generic [ref=f10e405]: "13"
+                      - cell "14" [ref=f10e406] [cursor=pointer]:
+                        - generic [ref=f10e407]: "14"
+                      - cell "15" [ref=f10e408] [cursor=pointer]:
+                        - generic [ref=f10e409]: "15"
+                      - cell "16" [ref=f10e410] [cursor=pointer]:
+                        - generic [ref=f10e411]: "16"
+                    - row "17 18 19 20 21 22 23" [ref=f10e412]:
+                      - cell "17" [ref=f10e413] [cursor=pointer]:
+                        - generic [ref=f10e414]: "17"
+                      - cell "18" [ref=f10e415] [cursor=pointer]:
+                        - generic [ref=f10e416]: "18"
+                      - cell "19" [ref=f10e417] [cursor=pointer]:
+                        - generic [ref=f10e418]: "19"
+                      - cell "20" [ref=f10e419] [cursor=pointer]:
+                        - generic [ref=f10e420]: "20"
+                      - cell "21" [ref=f10e421] [cursor=pointer]:
+                        - generic [ref=f10e422]: "21"
+                      - cell "22" [ref=f10e423] [cursor=pointer]:
+                        - generic [ref=f10e424]: "22"
+                      - cell "23" [ref=f10e425] [cursor=pointer]:
+                        - generic [ref=f10e426]: "23"
+                    - row "24 25 26 27 28 29 30" [ref=f10e427]:
+                      - cell "24" [ref=f10e428] [cursor=pointer]:
+                        - generic [ref=f10e429]: "24"
+                      - cell "25" [ref=f10e430] [cursor=pointer]:
+                        - generic [ref=f10e431]: "25"
+                      - cell "26" [ref=f10e432] [cursor=pointer]:
+                        - generic [ref=f10e433]: "26"
+                      - cell "27" [ref=f10e434] [cursor=pointer]:
+                        - generic [ref=f10e435]: "27"
+                      - cell "28" [ref=f10e436] [cursor=pointer]:
+                        - generic [ref=f10e437]: "28"
+                      - cell "29" [ref=f10e438] [cursor=pointer]:
+                        - generic [ref=f10e439]: "29"
+                      - cell "30" [ref=f10e440] [cursor=pointer]:
+                        - generic [ref=f10e441]: "30"
+                    - row "31 1 2 3 4 5 6" [ref=f10e442]:
+                      - cell "31" [ref=f10e443] [cursor=pointer]:
+                        - generic [ref=f10e444]: "31"
+                      - cell "1" [ref=f10e445] [cursor=pointer]:
+                        - generic [ref=f10e446]: "1"
+                      - cell "2" [ref=f10e447] [cursor=pointer]:
+                        - generic [ref=f10e448]: "2"
+                      - cell "3" [ref=f10e449] [cursor=pointer]:
+                        - generic [ref=f10e450]: "3"
+                      - cell "4" [ref=f10e451] [cursor=pointer]:
+                        - generic [ref=f10e452]: "4"
+                      - cell "5" [ref=f10e453] [cursor=pointer]:
+                        - generic [ref=f10e454]: "5"
+                      - cell "6" [ref=f10e455] [cursor=pointer]:
+                        - generic [ref=f10e456]: "6"
+      - generic [ref=e74]:
+        - link "Liên hệ" [ref=e76] [cursor=pointer]:
+          - /url: ""
+          - strong [ref=e78]: Liên hệ
+        - generic [ref=e79]: CỤC MÔI TRƯỜNG - BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG © 2018

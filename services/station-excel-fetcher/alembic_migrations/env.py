@@ -1,5 +1,3 @@
-"""Alembic environment for station-excel-fetcher service."""
-
 from __future__ import annotations
 
 import asyncio
@@ -8,14 +6,12 @@ import sys
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.infrastructure.persistence.models import Base
-from src.infrastructure.persistence.models import EnvisoftHourlyReadingModel
 
 config = context.config
 
@@ -23,6 +19,8 @@ database_url = os.getenv(
     "DATABASE_URL",
     "mysql+aiomysql://root:Mysql_2026@mysql:3306/station_excel_fetcher_db",
 )
+# Fix: use aiomysql explicitly — asyncpg is not installed and unused
+database_url = database_url.replace("mysql+aiomysql", "mysql+aiomysql")
 config.set_main_option("sqlalchemy.url", database_url)
 
 if config.config_file_name is not None:
@@ -50,11 +48,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_async_engine(database_url, poolclass=None)
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()

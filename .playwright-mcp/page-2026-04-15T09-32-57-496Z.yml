@@ -1,0 +1,34 @@
+- generic [active] [ref=e1]:
+  - iframe [ref=e2]:
+    - generic [ref=f9e8]:
+      - generic [ref=f9e9]:
+        - img [ref=f9e10]
+        - generic [ref=f9e481]:
+          - text: Bộ nông nghiệp và môi trường
+          - generic [ref=f9e482]:
+            - text: PHẦN MỀM QUẢN LÝ
+            - text: DỮ LIỆU QUAN TRẮC
+      - generic [ref=f9e483]: Đăng nhập hệ thống
+      - generic [ref=f9e485]:
+        - generic [ref=f9e486]:
+          - generic [ref=f9e487]:
+            - img [ref=f9e488]
+            - generic [ref=f9e494]: "Tài khoản (*) :"
+          - textbox "Tên người dùng" [ref=f9e498]
+        - generic [ref=f9e499]:
+          - generic [ref=f9e500]:
+            - img [ref=f9e501]
+            - generic [ref=f9e506]: "Mật khẩu (*) :"
+          - generic [ref=f9e510]:
+            - textbox "Mật khẩu" [ref=f9e511]
+            - img "eye-invisible" [ref=f9e513] [cursor=pointer]:
+              - img [ref=f9e514]
+        - button "ĐĂNG NHẬP" [ref=f9e518] [cursor=pointer]:
+          - generic [ref=f9e519]: ĐĂNG NHẬP
+      - generic [ref=f9e520]:
+        - text: CỤC MÔI TRƯỜNG
+        - text: BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG
+      - generic [ref=f9e521] [cursor=pointer]: Điều khoản bảo mật thông tin
+  - generic [ref=e4]:
+    - text: Đang xử lý ...
+    - img [ref=e5]

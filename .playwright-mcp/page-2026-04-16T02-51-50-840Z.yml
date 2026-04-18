@@ -1,0 +1,173 @@
+- generic [ref=e1]:
+  - banner: 
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - list [ref=e5]:
+        - listitem [ref=e6]:
+          - img [ref=e7]
+        - listitem [ref=e8]:
+          - link "Trang chủ" [ref=e9] [cursor=pointer]:
+            - /url: /eos/dashboard/index?qttd=True
+            - img [ref=e10]
+            - text: Trang chủ
+        - listitem [ref=e11]:
+          - link "Giám sát trực tuyến" [ref=e12] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e13]
+            - text: Giám sát trực tuyến
+        - listitem [ref=e14]:
+          - link "Tra cứu dữ liệu" [ref=e15] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e16]
+            - text: Tra cứu dữ liệu
+        - listitem [ref=e17]:
+          - link "Báo cáo" [ref=e18] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e19]
+            - text: Báo cáo
+          - text:   
+        - listitem [ref=e20]:
+          - link "Thống kê" [ref=e21] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e22]
+            - text: Thống kê
+          - text:    
+        - listitem [ref=e23]:
+          - text:   
+          - link "Cài đặt" [ref=e24] [cursor=pointer]:
+            - /url: "#"
+            - img [ref=e25]
+            - text: Cài đặt
+    - generic [ref=e26]:
+      - navigation [ref=e28]:
+        - generic [ref=e30]:
+          - heading "BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG" [level=5] [ref=e31]
+          - heading "PHẦN MỀM QUẢN LÝ DỮ LIỆU QUAN TRẮC" [level=5] [ref=e32]
+        - list [ref=e33]:
+          - listitem [ref=e34]:
+            - link " Định kỳ" [expanded] [ref=e35] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qtdk=True
+              - generic [ref=e36]: 
+              - strong [ref=e38]: Định kỳ
+          - listitem [ref=e39]:
+            - link " Tự động" [expanded] [ref=e40] [cursor=pointer]:
+              - /url: /eos/dashboard/index?qttd=True
+              - generic [ref=e41]: 
+              - strong [ref=e43]: Tự động
+          - listitem [ref=e44]:
+            - link " Viễn thám" [expanded] [ref=e45] [cursor=pointer]:
+              - /url: "?token=69b8c69a673da43b54870064"
+              - generic [ref=e46]: 
+              - strong [ref=e48]: Viễn thám
+          - listitem [ref=e49]:
+            - link " Thông báo" [ref=e50] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e51]:
+                - generic [ref=e52]: 
+                - generic [ref=e53]: Thông báo
+            - text: 
+          - listitem
+          - listitem [ref=e54]:
+            - link " None" [expanded] [ref=e55] [cursor=pointer]:
+              - /url: "#"
+              - generic [ref=e56]: 
+              - strong [ref=e58]:
+                - generic [ref=e59]: None
+      - generic [ref=e60]:
+        - generic [ref=e62]:
+          - heading "DỮ LIỆU TRUNG BÌNH THEO THỜI GIAN" [level=2] [ref=e63]
+          - list [ref=e64]:
+            - listitem [ref=e65]: Trang chủ
+            - listitem [ref=e66]: / Tra cứu dữ liệu
+            - listitem [ref=e67]:
+              - text: /
+              - strong [ref=e68]: Dữ liệu trung bình theo thời gian
+        - iframe [active] [ref=e73]:
+          - main [ref=f10e12]:
+            - generic [ref=f10e13]:
+              - generic [ref=f10e15] [cursor=pointer]:
+                - generic [ref=f10e17]:
+                  - combobox [ref=f10e19]
+                  - generic: "- Dữ liệu theo phút -"
+                - generic:
+                  - img:
+                    - img
+              - generic [ref=f10e21] [cursor=pointer]:
+                - generic [ref=f10e23]:
+                  - combobox [ref=f10e25]
+                  - generic "TP. Hà Nội" [ref=f10e206]
+                - generic:
+                  - img:
+                    - img
+                - img [ref=f10e203]:
+                  - img [ref=f10e204]
+              - generic [ref=f10e27] [cursor=pointer]:
+                - generic: "Hà Nội: 556 Nguyễn Văn Cừ (KK)"
+                - generic [ref=f10e29]:
+                  - combobox [active] [ref=f10e31]
+                  - 'generic "Hà Nội: 556 Nguyễn Văn Cừ (KK)" [ref=f10e224]'
+                - generic:
+                  - img:
+                    - img
+                - img [ref=f10e226]:
+                  - img [ref=f10e227]
+              - generic [ref=f10e33] [cursor=pointer]:
+                - generic [ref=f10e35]:
+                  - combobox [ref=f10e37]
+                  - generic: "- Dữ liệu nguyên gốc -"
+                - generic:
+                  - img:
+                    - img
+              - generic [ref=f10e39] [cursor=pointer]:
+                - generic [ref=f10e41]:
+                  - combobox [ref=f10e43]
+                  - generic "Không khí (KK)" [ref=f10e160]
+                - generic:
+                  - img:
+                    - img
+                - img [ref=f10e162]:
+                  - img [ref=f10e163]
+              - generic [ref=f10e45]:
+                - textbox "Start date" [ref=f10e47]
+                - generic "to" [ref=f10e49]:
+                  - img "swap-right" [ref=f10e50]:
+                    - img [ref=f10e51]
+                - textbox "End date" [ref=f10e54]
+                - generic:
+                  - img "calendar":
+                    - img
+              - generic [ref=f10e56] [cursor=pointer]:
+                - checkbox "So sánh dữ liệu vượt quy chuẩn" [ref=f10e58]
+                - generic [ref=f10e60]: So sánh dữ liệu vượt quy chuẩn
+              - generic [ref=f10e62]:
+                - generic [ref=f10e65]: Đạt QCVN
+                - generic [ref=f10e68]: Vượt QCVN
+              - button "XUẤT FILE" [ref=f10e71] [cursor=pointer]:
+                - generic [ref=f10e72]: XUẤT FILE
+            - button "collapsed Chọn thông số" [ref=f10e75] [cursor=pointer]:
+              - img "collapsed" [ref=f10e77]:
+                - img [ref=f10e78]
+              - generic [ref=f10e80]: Chọn thông số
+            - generic [ref=f10e81]:
+              - tablist [ref=f10e82]:
+                - generic [ref=f10e84]:
+                  - tab "Dữ liệu" [selected] [ref=f10e86] [cursor=pointer]
+                  - tab "Min/Max/Trung bình" [ref=f10e88] [cursor=pointer]
+                  - tab "Biểu đồ" [ref=f10e90] [cursor=pointer]
+              - tabpanel "Dữ liệu" [ref=f10e93]:
+                - table [ref=f10e102]:
+                  - rowgroup [ref=f10e105]:
+                    - row "TT THỜI GIAN ĐO" [ref=f10e106]:
+                      - columnheader "TT" [ref=f10e107]
+                      - columnheader "THỜI GIAN ĐO" [ref=f10e108]
+                  - rowgroup [ref=f10e109]:
+                    - row "No data No data" [ref=f10e110]:
+                      - cell "No data No data" [ref=f10e111]:
+                        - generic [ref=f10e113]:
+                          - img "No data" [ref=f10e115]
+                          - generic [ref=f10e121]: No data
+      - generic [ref=e74]:
+        - link "Liên hệ" [ref=e76] [cursor=pointer]:
+          - /url: ""
+          - strong [ref=e78]: Liên hệ
+        - generic [ref=e79]: CỤC MÔI TRƯỜNG - BỘ NÔNG NGHIỆP VÀ MÔI TRƯỜNG © 2018

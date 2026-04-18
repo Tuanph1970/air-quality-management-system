@@ -82,6 +82,23 @@ echo "Extra env vars : ${EXTRA_ENV_VARS[*]:-none}"
 echo "Working dir    : $PROJECT_ROOT"
 echo ""
 
+# ── 2b. Apply EXTRA_ENV_VARS to env file (needed so the check below sees them)
+if [ "$PROD_MODE" = true ] && [ ${#EXTRA_ENV_VARS[@]} -gt 0 ]; then
+  for ev in "${EXTRA_ENV_VARS[@]}"; do
+    key="${ev%%=*}"
+    val="${ev#*=}"
+    # Escape special chars in val for safe sed replacement
+    val_escaped="${val//\\/\\\\}"
+    val_escaped="${val_escaped//\//\\/}"
+    val_escaped="${val_escaped//&/\\&}"
+    val_escaped="${val_escaped//\$/\\\$}"
+    # Use portable ed-style substitution: write ; then substitute
+    printf '%s\n' "s|^${key}=.*|${key}=${val_escaped}|" w q | ed -s "$ENV_FILE" 2>/dev/null \
+      || sed -i "s|^${key}=.*|${key}=${val_escaped}|" "$ENV_FILE"
+    echo "[INFO]  Set $key in $ENV_FILE"
+  done
+fi
+
 # ── 3. Warn about unset secrets in prod ─────────────────────────────────────
 if [ "$PROD_MODE" = true ]; then
   # Source env file to check for empty secrets
@@ -91,7 +108,7 @@ if [ "$PROD_MODE" = true ]; then
   set +a
 
   MISSING=()
-  for var in DB_PASSWORD RABBITMQ_PASS REDIS_PASSWORD JWT_SECRET; do
+  for var in DB_PASSWORD RABBITMQ_PASS REDIS_PASSWORD JWT_SECRET MYSQL_ROOT_PASSWORD ENVISOFT_BASIC_PASS ENVISOFT_FORM_PASS; do
     val="$(eval echo "\$$var")"
     if [ -z "$val" ]; then
       MISSING+=("$var")
@@ -149,7 +166,7 @@ docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build $BUILD_FLAGS
 echo ""
 echo "[INFO]  Starting all services..."
 # Allow partial failures — individual health is checked below
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d "${EXTRA_ENV_VARS[@]}" || true
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
 
 # ── 7. Wait for health checks ─────────────────────────────────────────────────
 echo ""
@@ -209,7 +226,7 @@ check alert-db     120
 check remote-sensing-db  120
 check station-db   120
 check wrf-db       120
-check station-excel-fetcher-db 120
+check mysql        120
 check user-service      120
 check factory-service   120
 check sensor-service    120
