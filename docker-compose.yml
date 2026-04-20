@@ -661,7 +661,8 @@ services:
       - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_excel_fetcher_db?charset=utf8mb4
       - RAW_DATA_ROOT=/app/raw_excel_data
       - FETCH_CRON_EXPRESSION=1 0 * * *
-      - FETCH_ON_STARTUP=false
+      - FETCH_ON_STARTUP=true
+      - TZ=Asia/Ho_Chi_Minh
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - ENVISOFT_BASIC_USER=${ENVISOFT_BASIC_USER:-tw-admin}
       - ENVISOFT_BASIC_PASS=${ENVISOFT_BASIC_PASS:-tw-admin}

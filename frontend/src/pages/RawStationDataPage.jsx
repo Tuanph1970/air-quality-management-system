@@ -21,7 +21,7 @@ import {
 import Header from '../components/layout/Header';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
-import { stationServiceApi } from '../services/stationServiceApi';
+import { excelFetcherApi } from '../services/excelFetcherApi';
 import { formatTimeAgo } from '../utils/format';
 
 // AQI color mapping
@@ -52,7 +52,7 @@ function StationSelector({ stations, selectedStation, onSelect }) {
   const filteredStations = stations.filter(
     (s) =>
       s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.station_code?.toLowerCase().includes(search.toLowerCase())
+      s.station_id?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -91,7 +91,7 @@ function StationSelector({ stations, selectedStation, onSelect }) {
             ) : (
               filteredStations.map((station) => (
                 <button
-                  key={station.id}
+                  key={station.station_id}
                   onClick={() => {
                     onSelect(station);
                     setIsOpen(false);
@@ -102,7 +102,6 @@ function StationSelector({ stations, selectedStation, onSelect }) {
                   <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white truncate">{station.name}</div>
-                    <div className="text-xs text-gray-400">{station.station_code}</div>
                   </div>
                 </button>
               ))
@@ -244,12 +243,12 @@ function DataTable({ data, isLoading }) {
     const mapping = {
       measured_at: item.measured_at ? new Date(item.measured_at).toLocaleString() : '-',
       aqi: item.aqi?.toFixed(0) ?? '-',
-      pm25: item.pm25_value?.toFixed(1) ?? '-',
-      pm10: item.pm10_value?.toFixed(1) ?? '-',
-      no2: item.no2_value?.toFixed(1) ?? '-',
-      o3: item.o3_value?.toFixed(1) ?? '-',
-      co: item.co_value?.toFixed(2) ?? '-',
-      so2: item.so2_value?.toFixed(1) ?? '-',
+      pm25: item.pm25?.toFixed(1) ?? '-',
+      pm10: item.pm10?.toFixed(1) ?? '-',
+      no2: item.no2?.toFixed(1) ?? '-',
+      o3: item.o3?.toFixed(1) ?? '-',
+      co: item.co?.toFixed(2) ?? '-',
+      so2: item.so2?.toFixed(1) ?? '-',
       temperature: item.temperature?.toFixed(1) ?? '-',
       humidity: item.humidity?.toFixed(0) ?? '-',
       wind_speed: item.wind_speed?.toFixed(1) ?? '-',
@@ -325,11 +324,18 @@ function RawStationDataPage() {
     loadStations();
   }, []);
 
+  // Auto-load data when station is selected
+  useEffect(() => {
+    if (selectedStation) {
+      loadRawData();
+    }
+  }, [selectedStation]);
+
   async function loadStations() {
     setIsLoadingStations(true);
     try {
-      const response = await stationServiceApi.getStations({ limit: 100 });
-      setStations(response.data?.items || []);
+      const response = await excelFetcherApi.getStations();
+      setStations(response.data?.stations || []);
     } catch (error) {
       console.error('Failed to load stations:', error);
       setStations([]);
@@ -338,50 +344,34 @@ function RawStationDataPage() {
     }
   }
 
-  async function handleFetch(fetchParams) {
-    if (!selectedStation) return;
-
-    setIsFetching(true);
-    setFetchResult(null);
-    setRawData([]);
-
-    try {
-      const response = await stationServiceApi.fetchRawData(selectedStation.id, fetchParams);
-      setFetchResult(response.data);
-
-      if (response.data.success) {
-        // Auto-load the data after fetch
-        await loadRawData();
-      }
-    } catch (error) {
-      console.error('Failed to fetch raw data:', error);
-      setFetchResult({
-        success: false,
-        message: error?.response?.data?.detail || error.message || 'Failed to fetch data',
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  }
-
   async function loadRawData() {
     if (!selectedStation) return;
 
     setIsLoadingData(true);
     try {
-      const params = {};
-      if (filterStartTime) params.start_time = filterStartTime;
-      if (filterEndTime) params.end_time = filterEndTime;
-      params.limit = 1000;
+      const params = {
+        station_id: selectedStation.station_id,
+        from_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        to_date: new Date().toISOString().split('T')[0],
+        limit: 1000,
+      };
+      if (filterStartTime) params.from_date = filterStartTime.split('T')[0];
+      if (filterEndTime) params.to_date = filterEndTime.split('T')[0];
 
-      const response = await stationServiceApi.getRawData(selectedStation.id, params);
-      setRawData(response.data?.items || []);
+      const response = await excelFetcherApi.getRecords(params);
+      setRawData(response.data?.records || []);
     } catch (error) {
       console.error('Failed to load raw data:', error);
       setRawData([]);
     } finally {
       setIsLoadingData(false);
     }
+  }
+
+  async function handleFetch(fetchParams) {
+    // No-op: data is pre-fetched by station-excel-fetcher service
+    // Reload data after "fetch"
+    await loadRawData();
   }
 
   function handleExport() {
@@ -508,18 +498,8 @@ function RawStationDataPage() {
                     <span className="text-white">{selectedStation.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Code</span>
-                    <span className="text-white font-mono">{selectedStation.station_code}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Type</span>
-                    <span className="text-white">{selectedStation.station_type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Location</span>
-                    <span className="text-white">
-                      {selectedStation.latitude?.toFixed(4)}, {selectedStation.longitude?.toFixed(4)}
-                    </span>
+                    <span className="text-gray-400">Station ID</span>
+                    <span className="text-white font-mono text-xs">{selectedStation.station_id}</span>
                   </div>
                 </div>
               </div>
