@@ -379,6 +379,8 @@ function RawStationDataPage() {
 
     // Convert to CSV
     const headers = [
+      'Station ID',
+      'Station Name',
       'Time',
       'AQI',
       'PM2.5',
@@ -390,21 +392,31 @@ function RawStationDataPage() {
       'Temperature',
       'Humidity',
       'Wind Speed',
+      'Wind Direction',
     ];
 
-    const rows = rawData.map((item) => [
-      item.measured_at ? new Date(item.measured_at).toISOString() : '',
-      item.aqi ?? '',
-      item.pm25 ?? '',
-      item.pm10 ?? '',
-      item.no2 ?? '',
-      item.o3 ?? '',
-      item.co ?? '',
-      item.so2 ?? '',
-      item.temperature ?? '',
-      item.humidity ?? '',
-      item.wind_speed ?? '',
-    ]);
+    const rows = rawData.map((item) => {
+      const dt = item.measured_at ? new Date(item.measured_at) : null;
+      const localTime = dt
+        ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}:${String(dt.getSeconds()).padStart(2, '0')}`
+        : '';
+      return [
+        item.station_id ?? '',
+        item.station_name ?? '',
+        localTime,
+        item.aqi ?? '',
+        item.pm25 ?? '',
+        item.pm10 ?? '',
+        item.no2 ?? '',
+        item.o3 ?? '',
+        item.co ?? '',
+        item.so2 ?? '',
+        item.temperature ?? '',
+        item.humidity ?? '',
+        item.wind_speed ?? '',
+        item.wind_direction ?? '',
+      ];
+    });
 
     const csvContent =
       headers.join(',') + '\n' + rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
