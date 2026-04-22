@@ -147,8 +147,8 @@ async def health():
     try:
         from .infrastructure.persistence.reading_repository import ReadingRepository
         repo = ReadingRepository()
-        # Find most recent record
-        yesterday = (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
+        # Find most recent record — use local time, not UTC
+        yesterday = (datetime.now().date() - timedelta(days=1)).strftime("%Y-%m-%d")
         count = await repo.count_by_date_range(
             from_date=datetime.fromisoformat(f"{yesterday}T00:00:00"),
             to_date=datetime.fromisoformat(f"{yesterday}T23:59:59"),
@@ -174,7 +174,7 @@ async def trigger_fetch(req: ManualFetchRequest):
     Use force=true to re-fetch even if data already exists.
     """
     scheduler = ExcelFetchScheduler()
-    yesterday = (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday = (datetime.now().date() - timedelta(days=1)).strftime("%Y-%m-%d")
     from_d = req.from_date or yesterday
     to_d = req.to_date or yesterday
 
@@ -212,7 +212,7 @@ async def trigger_retry(req: RetryRequest):
     """
     scheduler = ExcelFetchScheduler()
     fetch_date = req.fetch_date or (
-        (datetime.utcnow().date() - timedelta(days=1)).strftime("%Y-%m-%d")
+        (datetime.now().date() - timedelta(days=1)).strftime("%Y-%m-%d")
     )
 
     logger.info(f"[API] Retry requested for date: {fetch_date}")

@@ -226,7 +226,7 @@ class ReadingRepository:
         ]
 
         missing: list[date_type] = []
-        today = datetime.utcnow().date()
+        today = datetime.now().date()
 
         async with session_cm() as session:
             for days_ago in range(1, days_back + 1):

@@ -306,8 +306,8 @@ class ExcelFetchScheduler:
             else:
                 logger.info("[SCHEDULER] No missing dates in last 7 days")
 
-            # 2. Yesterday (primary scheduled run)
-            yesterday = datetime.utcnow().date() - timedelta(days=1)
+            # 2. Yesterday (primary scheduled run) — use local time, not UTC
+            yesterday = datetime.now().date() - timedelta(days=1)
             dates_to_fetch = [yesterday] + missing_dates
 
             total_all = 0
