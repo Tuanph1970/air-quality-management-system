@@ -387,35 +387,27 @@ function RawStationDataPage() {
       'O3',
       'CO',
       'SO2',
-      'NO',
-      'NOx',
       'Temperature',
       'Humidity',
-      'Pressure',
       'Wind Speed',
-      'Wind Direction',
     ];
 
     const rows = rawData.map((item) => [
       item.measured_at ? new Date(item.measured_at).toISOString() : '',
       item.aqi ?? '',
-      item.pm25_value ?? '',
-      item.pm10_value ?? '',
-      item.no2_value ?? '',
-      item.o3_value ?? '',
-      item.co_value ?? '',
-      item.so2_value ?? '',
-      item.no_value ?? '',
-      item.nox_value ?? '',
+      item.pm25 ?? '',
+      item.pm10 ?? '',
+      item.no2 ?? '',
+      item.o3 ?? '',
+      item.co ?? '',
+      item.so2 ?? '',
       item.temperature ?? '',
       item.humidity ?? '',
-      item.pressure ?? '',
       item.wind_speed ?? '',
-      item.wind_direction ?? '',
     ]);
 
     const csvContent =
-      headers.join(',') + '\n' + rows.map((row) => row.join(',')).join('\n');
+      headers.join(',') + '\n' + rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
 
     // Download
     const blob = new Blob([csvContent], { type: 'text/csv' });
