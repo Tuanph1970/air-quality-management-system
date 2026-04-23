@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import DashboardPage from './pages/DashboardPage';
@@ -21,7 +22,11 @@ import RawStationDataPage from './pages/RawStationDataPage';
 import useAuthStore from './store/authStore';
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isInitializing } = useAuthStore();
+
+  if (isInitializing) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -35,6 +40,12 @@ ProtectedRoute.propTypes = {
 };
 
 function App() {
+  const { initializeAuth } = useAuthStore();
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
   return (
     <BrowserRouter>
       <Routes>

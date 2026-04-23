@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+const WS_URL = import.meta.env.VITE_WS_URL || (() => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws`;
+})();
 
 export function useWebSocket(channel = 'air-quality') {
   const wsRef = useRef(null);

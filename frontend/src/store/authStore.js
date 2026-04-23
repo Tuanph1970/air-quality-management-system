@@ -4,7 +4,8 @@ import { authApi } from '../services/authApi';
 const useAuthStore = create((set) => ({
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  isAuthenticated: false,
+  isInitializing: !!localStorage.getItem('token'),
   isLoading: false,
   error: null,
 
@@ -60,6 +61,20 @@ const useAuthStore = create((set) => ({
       const message = err.response?.data?.detail || 'Password reset failed';
       set({ error: message, isLoading: false });
       throw err;
+    }
+  },
+
+  initializeAuth: async () => {
+    if (!localStorage.getItem('token')) {
+      set({ isInitializing: false });
+      return;
+    }
+    try {
+      const response = await authApi.getProfile();
+      set({ user: response.data, isAuthenticated: true, isInitializing: false });
+    } catch (_err) {
+      localStorage.removeItem('token');
+      set({ user: null, token: null, isAuthenticated: false, isInitializing: false });
     }
   },
 

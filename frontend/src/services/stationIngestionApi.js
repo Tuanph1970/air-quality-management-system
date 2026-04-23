@@ -1,7 +1,7 @@
 import api from './api';
 import axios from 'axios';
 
-const STATION_INGESTION_API_URL = import.meta.env.VITE_STATION_INGESTION_API_URL || 'http://localhost:8010/api/v1';
+const STATION_INGESTION_API_URL = import.meta.env.VITE_STATION_INGESTION_API_URL || '/api/v1/station-ingestion';
 
 // Create a separate axios instance for station ingestion API
 const stationApi = axios.create({
