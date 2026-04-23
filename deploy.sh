@@ -204,6 +204,7 @@ wait_healthy() {
   local elapsed=0
   local interval=5
   local container="aqms-${service}"
+  local cstate="" chealth=""
 
   while [ $elapsed -lt $max_wait ]; do
     local inspect_out
@@ -211,12 +212,17 @@ wait_healthy() {
       --format='{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' \
       2>/dev/null || echo "notfound no-healthcheck")
 
-    local cstate chealth
     cstate=$(echo "$inspect_out" | awk '{print $1}')
     chealth=$(echo "$inspect_out" | awk '{print $2}')
 
     if [ "$chealth" = "healthy" ]; then
       echo "  ✓  $service is healthy (${elapsed}s)"
+      return 0
+    fi
+
+    # Running container with no healthcheck defined → treat as healthy
+    if [ "$chealth" = "no-healthcheck" ] && [ "$cstate" = "running" ]; then
+      echo "  ✓  $service is running (no healthcheck, ${elapsed}s)"
       return 0
     fi
 
@@ -241,27 +247,32 @@ check() {
   fi
 }
 
-check rabbitmq     120
-check redis         60
-check user-db      120
-check factory-db   120
-check sensor-db    120
-check alert-db     120
-check remote-sensing-db  120
-check station-db   120
-check wrf-db       120
-check mysql        120
-check user-service      120
-check factory-service   120
-check sensor-service    120
-check alert-service     150
-check air-quality-service 120
-check remote-sensing-service 120
-check station-service   120
-check wrf-service       120
-check station-excel-fetcher 120
-check frontend            60
-check api-gateway       120
+check rabbitmq     180
+check redis         90
+
+# Prod stack uses per-service PostgreSQL containers; dev uses a single MySQL.
+if [ "$PROD_MODE" = true ]; then
+  check user-db           180
+  check factory-db        180
+  check sensor-db         180
+  check alert-db          180
+  check remote-sensing-db 180
+  check station-db        180
+  check wrf-db            180
+fi
+
+check mysql        300
+check user-service          300
+check factory-service       300
+# check sensor-service        300   # DISABLED - service commented out
+check alert-service         360
+check air-quality-service   300
+# check remote-sensing-service 300  # DISABLED - service commented out
+check station-service       300
+# check wrf-service           300   # DISABLED - service commented out
+check station-excel-fetcher 300
+check frontend              120
+check api-gateway           300
 
 # ── 8. Summary ────────────────────────────────────────────────────────────────
 echo ""

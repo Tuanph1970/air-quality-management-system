@@ -28,7 +28,7 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 15s
       retries: 10
       start_period: 40s
     restart: unless-stopped
@@ -56,7 +56,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./scripts/init-mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Mysql_2026}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-Mysql_2025}"]
       interval: 10s
       timeout: 5s
       retries: 15
@@ -127,17 +127,11 @@ services:
     depends_on:
       factory-service:
         condition: service_healthy
-      sensor-service:
-        condition: service_healthy
       alert-service:
         condition: service_healthy
       air-quality-service:
         condition: service_healthy
       user-service:
-        condition: service_healthy
-      remote-sensing-service:
-        condition: service_healthy
-      wrf-service:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -161,7 +155,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=factory-service
       - SERVICE_PORT=8001
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/factory_db?charset=utf8mb4
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/factory_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
@@ -188,43 +182,48 @@ services:
     networks:
       - aqms-network
 
-  sensor-service:
-    build:
-      context: ./services/sensor-service
-      dockerfile: Dockerfile
-    container_name: aqms-sensor-service
-    ports:
-      - "${SENSOR_SERVICE_PORT:-8002}:8002"
-    environment:
-      - PYTHONPATH=/app
-      - SERVICE_NAME=sensor-service
-      - SERVICE_PORT=8002
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/sensor_db?charset=utf8mb4
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
-      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-    volumes:
-      - ./services/sensor-service/src:/app/src
-      - ./services/shared:/app/shared
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 120s
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    networks:
-      - aqms-network
+  # ---------------------------------------------------------------------------
+  # DISABLED: sensor-service (commented out to free disk space)
+  # Re-enable by removing the '#' prefix from all lines in this block,
+  # and restoring sensor-service to api-gateway depends_on.
+  # ---------------------------------------------------------------------------
+  # sensor-service:
+  #   build:
+  #     context: ./services/sensor-service
+  #     dockerfile: Dockerfile
+  #   container_name: aqms-sensor-service
+  #   ports:
+  #     - "${SENSOR_SERVICE_PORT:-8002}:8002"
+  #   environment:
+  #     - PYTHONPATH=/app
+  #     - SERVICE_NAME=sensor-service
+  #     - SERVICE_PORT=8002
+  #     - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/sensor_db?charset=utf8mb4
+  #     - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+  #     - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
+  #     - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+  #   volumes:
+  #     - ./services/sensor-service/src:/app/src
+  #     - ./services/shared:/app/shared
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 15
+  #     start_period: 120s
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+  #   networks:
+  #     - aqms-network
 
   alert-service:
     build:
@@ -237,7 +236,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=alert-service
       - SERVICE_PORT=8003
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/alert_db?charset=utf8mb4
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/alert_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
@@ -314,7 +313,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=user-service
       - SERVICE_PORT=8005
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/user_db?charset=utf8mb4
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/user_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
@@ -341,56 +340,58 @@ services:
     networks:
       - aqms-network
 
-  # ===========================================================================
-  # REMOTE SENSING SERVICE - Satellite data, Excel import, data fusion
-  # ===========================================================================
-  remote-sensing-service:
-    build:
-      context: ./services/remote-sensing-service
-      dockerfile: Dockerfile
-    container_name: aqms-remote-sensing-service
-    ports:
-      - "${REMOTE_SENSING_SERVICE_PORT:-8006}:8006"
-    environment:
-      - PYTHONPATH=/app
-      - SERVICE_NAME=remote-sensing-service
-      - SERVICE_PORT=8006
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/remote_sensing_db?charset=utf8mb4
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
-      - SENSOR_SERVICE_URL=http://sensor-service:8002
-      - COPERNICUS_ADS_API_KEY=${COPERNICUS_ADS_API_KEY:-}
-      - NASA_EARTHDATA_TOKEN=${NASA_EARTHDATA_TOKEN:-}
-      - SENTINEL_HUB_CLIENT_ID=${SENTINEL_HUB_CLIENT_ID:-}
-      - SENTINEL_HUB_CLIENT_SECRET=${SENTINEL_HUB_CLIENT_SECRET:-}
-      - CITY_BBOX_NORTH=${CITY_BBOX_NORTH:-21.1}
-      - CITY_BBOX_SOUTH=${CITY_BBOX_SOUTH:-20.9}
-      - CITY_BBOX_EAST=${CITY_BBOX_EAST:-105.9}
-      - CITY_BBOX_WEST=${CITY_BBOX_WEST:-105.7}
-      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-    volumes:
-      - ./services/remote-sensing-service/src:/app/src
-      - ./services/shared:/app/shared
-      - satellite_data:/app/data
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8006/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 120s
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    networks:
-      - aqms-network
+  # ---------------------------------------------------------------------------
+  # DISABLED: remote-sensing-service (commented out to free disk space)
+  # Re-enable by removing the '#' prefix from all lines in this block,
+  # and restoring remote-sensing-service to api-gateway depends_on.
+  # ---------------------------------------------------------------------------
+  # remote-sensing-service:
+  #   build:
+  #     context: ./services/remote-sensing-service
+  #     dockerfile: Dockerfile
+  #   container_name: aqms-remote-sensing-service
+  #   ports:
+  #     - "${REMOTE_SENSING_SERVICE_PORT:-8006}:8006"
+  #   environment:
+  #     - PYTHONPATH=/app
+  #     - SERVICE_NAME=remote-sensing-service
+  #     - SERVICE_PORT=8006
+  #     - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/remote_sensing_db?charset=utf8mb4
+  #     - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+  #     - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
+  #     - SENSOR_SERVICE_URL=http://sensor-service:8002
+  #     - COPERNICUS_ADS_API_KEY=${COPERNICUS_ADS_API_KEY:-}
+  #     - NASA_EARTHDATA_TOKEN=${NASA_EARTHDATA_TOKEN:-}
+  #     - SENTINEL_HUB_CLIENT_ID=${SENTINEL_HUB_CLIENT_ID:-}
+  #     - SENTINEL_HUB_CLIENT_SECRET=${SENTINEL_HUB_CLIENT_SECRET:-}
+  #     - CITY_BBOX_NORTH=${CITY_BBOX_NORTH:-21.1}
+  #     - CITY_BBOX_SOUTH=${CITY_BBOX_SOUTH:-20.9}
+  #     - CITY_BBOX_EAST=${CITY_BBOX_EAST:-105.9}
+  #     - CITY_BBOX_WEST=${CITY_BBOX_WEST:-105.7}
+  #     - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+  #   volumes:
+  #     - ./services/remote-sensing-service/src:/app/src
+  #     - ./services/shared:/app/shared
+  #     - satellite_data:/app/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8006/health')\""]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 15
+  #     start_period: 120s
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+  #   networks:
+  #     - aqms-network
 
   # ===========================================================================
   # STATION SERVICE - Air quality station management & data ingestion
@@ -406,7 +407,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=station-service
       - SERVICE_PORT=8007
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_db?charset=utf8mb4
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/station_db?charset=utf8mb4
       - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
       - SENSOR_SERVICE_URL=http://sensor-service:8002
       - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
@@ -437,85 +438,87 @@ services:
     networks:
       - aqms-network
 
-  # ===========================================================================
-  # PURPLEAIR INGESTION SERVICE - PurpleAir device data ingestion
-  # ===========================================================================
-  purpleair-ingestion-service:
-    build:
-      context: ./services/purpleair-ingestion-service
-      dockerfile: Dockerfile
-    container_name: aqms-purpleair-ingestion-service
-    ports:
-      - "${PURPLEAIR_INGESTION_PORT:-8008}:8008"
-    environment:
-      - PYTHONPATH=/app
-      - SERVICE_NAME=purpleair-ingestion-service
-      - SERVICE_PORT=8008
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
-      - PURPLEAIR_API_KEY=${PURPLEAIR_API_KEY:-}
-      - PURPLEAIR_USE_FAKE_DATA=${PURPLEAIR_USE_FAKE_DATA:-False}
-      - PURPLEAIR_FAKE_DATA_INTERVAL=${PURPLEAIR_FAKE_DATA_INTERVAL:-60}
-      - SENSOR_SERVICE_URL=http://sensor-service:8002
-      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-    volumes:
-      - ./services/purpleair-ingestion-service/src:/app/src
-      - ./services/shared:/app/shared
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 60s
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    networks:
-      - aqms-network
+  # ---------------------------------------------------------------------------
+  # DISABLED: purpleair-ingestion-service (commented out to free disk space;
+  # depends on sensor-service which is also disabled)
+  # ---------------------------------------------------------------------------
+  # purpleair-ingestion-service:
+  #   build:
+  #     context: ./services/purpleair-ingestion-service
+  #     dockerfile: Dockerfile
+  #   container_name: aqms-purpleair-ingestion-service
+  #   ports:
+  #     - "${PURPLEAIR_INGESTION_PORT:-8008}:8008"
+  #   environment:
+  #     - PYTHONPATH=/app
+  #     - SERVICE_NAME=purpleair-ingestion-service
+  #     - SERVICE_PORT=8008
+  #     - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+  #     - PURPLEAIR_API_KEY=${PURPLEAIR_API_KEY:-}
+  #     - PURPLEAIR_USE_FAKE_DATA=${PURPLEAIR_USE_FAKE_DATA:-False}
+  #     - PURPLEAIR_FAKE_DATA_INTERVAL=${PURPLEAIR_FAKE_DATA_INTERVAL:-60}
+  #     - SENSOR_SERVICE_URL=http://sensor-service:8002
+  #     - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+  #   volumes:
+  #     - ./services/purpleair-ingestion-service/src:/app/src
+  #     - ./services/shared:/app/shared
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8008/health')\""]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 15
+  #     start_period: 60s
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+  #   networks:
+  #     - aqms-network
 
-  # ===========================================================================
-  # PURPLEAIR LISTENER - Event listener for PurpleAir data synchronization
-  # ===========================================================================
-  purpleair-listener:
-    build:
-      context: ./services/purpleair-listener
-      dockerfile: Dockerfile
-    container_name: aqms-purpleair-listener
-    ports:
-      - "${PURPLEAIR_LISTENER_HEALTH_PORT:-8012}:8012"
-    environment:
-      - PYTHONPATH=/app
-      - SERVICE_NAME=purpleair-listener
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
-      - SENSOR_SERVICE_URL=http://sensor-service:8002
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - HEALTH_PORT=8012
-    volumes:
-      - ./services/purpleair-listener/src:/app/src
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      sensor-service:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    networks:
-      - aqms-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:8012/health || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+  # ---------------------------------------------------------------------------
+  # DISABLED: purpleair-listener (commented out to free disk space;
+  # depends on sensor-service which is also disabled)
+  # ---------------------------------------------------------------------------
+  # purpleair-listener:
+  #   build:
+  #     context: ./services/purpleair-listener
+  #     dockerfile: Dockerfile
+  #   container_name: aqms-purpleair-listener
+  #   ports:
+  #     - "${PURPLEAIR_LISTENER_HEALTH_PORT:-8012}:8012"
+  #   environment:
+  #     - PYTHONPATH=/app
+  #     - SERVICE_NAME=purpleair-listener
+  #     - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+  #     - SENSOR_SERVICE_URL=http://sensor-service:8002
+  #     - LOG_LEVEL=${LOG_LEVEL:-INFO}
+  #     - HEALTH_PORT=8012
+  #   volumes:
+  #     - ./services/purpleair-listener/src:/app/src
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     sensor-service:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+  #   networks:
+  #     - aqms-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "wget -q -O- http://localhost:8012/health || exit 1"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 30s
 
   # ===========================================================================
   # STATION INGESTION SERVICE - External station API data ingestion
@@ -531,7 +534,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=station-ingestion-service
       - SERVICE_PORT=8008
-      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_ingestion_db?charset=utf8mb4
+      - DATABASE_URL=mysql+pymysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/station_ingestion_db?charset=utf8mb4
       - STATION_API_BASE_URL=${STATION_API_BASE_URL:-https://admin-qttd.tedp.vn/api/partner/v1}
       - STATION_API_KEY=${STATION_API_KEY:-c9e03048-46e1-40b0-9b6b-f12accef9f5a}
       - FETCH_INTERVAL_SECONDS=${FETCH_INTERVAL_SECONDS:-300}
@@ -560,54 +563,56 @@ services:
     networks:
       - aqms-network
 
-  # ===========================================================================
-  # WRF SERVICE - Weather Research and Forecasting Model
-  # ===========================================================================
-  wrf-service:
-    build:
-      context: ./services/wrf-service
-      dockerfile: Dockerfile
-    container_name: aqms-wrf-service
-    ports:
-      - "${WRF_SERVICE_PORT:-8009}:8009"
-    environment:
-      - PYTHONPATH=/app
-      - SERVICE_NAME=wrf-service
-      - SERVICE_PORT=8009
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/wrf_db?charset=utf8mb4
-      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
-      - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
-      - SENSOR_SERVICE_URL=http://sensor-service:8002
-      - WRF_DATA_DIR=/app/data
-      - GFS_DATA_DIR=/app/data/gfs
-      - WRF_OUTPUT_DIR=/app/data/wrf_output
-      - WRF_NUM_PROCESSES=${WRF_NUM_PROCESSES:-4}
-      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
-      # Use sample data mode when WRF binaries are not installed
-      - WRF_USE_SAMPLE_DATA=${WRF_USE_SAMPLE_DATA:-True}
-    volumes:
-      - ./services/wrf-service/src:/app/src
-      - ./services/shared:/app/shared
-      - wrf_data:/app/data
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8009/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 15
-      start_period: 120s
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "5"
-    networks:
-      - aqms-network
+  # ---------------------------------------------------------------------------
+  # DISABLED: wrf-service (commented out to free disk space)
+  # Re-enable by removing the '#' prefix from all lines in this block,
+  # and restoring wrf-service to api-gateway depends_on.
+  # ---------------------------------------------------------------------------
+  # wrf-service:
+  #   build:
+  #     context: ./services/wrf-service
+  #     dockerfile: Dockerfile
+  #   container_name: aqms-wrf-service
+  #   ports:
+  #     - "${WRF_SERVICE_PORT:-8009}:8009"
+  #   environment:
+  #     - PYTHONPATH=/app
+  #     - SERVICE_NAME=wrf-service
+  #     - SERVICE_PORT=8009
+  #     - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/wrf_db?charset=utf8mb4
+  #     - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASS:-guest}@rabbitmq:5672/
+  #     - AIR_QUALITY_SERVICE_URL=http://air-quality-service:8004
+  #     - SENSOR_SERVICE_URL=http://sensor-service:8002
+  #     - WRF_DATA_DIR=/app/data
+  #     - GFS_DATA_DIR=/app/data/gfs
+  #     - WRF_OUTPUT_DIR=/app/data/wrf_output
+  #     - WRF_NUM_PROCESSES=${WRF_NUM_PROCESSES:-4}
+  #     - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+  #     # Use sample data mode when WRF binaries are not installed
+  #     - WRF_USE_SAMPLE_DATA=${WRF_USE_SAMPLE_DATA:-True}
+  #   volumes:
+  #     - ./services/wrf-service/src:/app/src
+  #     - ./services/shared:/app/shared
+  #     - wrf_data:/app/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8009/health')\""]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 15
+  #     start_period: 120s
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "5"
+  #   networks:
+  #     - aqms-network
 
   # ===========================================================================
   # FRONTEND - Vite dev server with hot-reload (development)
@@ -658,7 +663,7 @@ services:
       - PYTHONPATH=/app
       - SERVICE_NAME=station-excel-fetcher
       - SERVICE_PORT=8011
-      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2026}@mysql:3306/station_excel_fetcher_db?charset=utf8mb4
+      - DATABASE_URL=mysql+aiomysql://root:${MYSQL_ROOT_PASSWORD:-Mysql_2025}@mysql:3306/station_excel_fetcher_db?charset=utf8mb4
       - RAW_DATA_ROOT=/app/raw_excel_data
       - FETCH_CRON_EXPRESSION=1 0 * * *
       - FETCH_ON_STARTUP=true
@@ -679,8 +684,8 @@ services:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8011/health || exit 1"]
       interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 600s
     restart: unless-stopped
     logging:
       driver: json-file
@@ -727,10 +732,8 @@ services:
 volumes:
   mysql_data:
     driver: local
-  satellite_data:
-    driver: local
-  wrf_data:
-    driver: local
+  # satellite_data: disabled (remote-sensing-service is commented out)
+  # wrf_data: disabled (wrf-service is commented out)
   redis_data:
     driver: local
   rabbitmq_data:
