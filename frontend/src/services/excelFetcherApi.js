@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Excel fetcher runs on port 8011 (dev) or proxied via nginx /api/v1/excel-fetcher/ (prod)
-const rawUrl = import.meta.env.VITE_EXCEL_FETCHER_URL || 'http://localhost:8011';
+const rawUrl = import.meta.env.VITE_EXCEL_FETCHER_URL || '/api/v1/excel-fetcher';
 const EXCEL_FETCHER_URL = rawUrl.endsWith('/api/v1') ? `${rawUrl}/excel-fetcher` : rawUrl;
 
 const excelApi = axios.create({
