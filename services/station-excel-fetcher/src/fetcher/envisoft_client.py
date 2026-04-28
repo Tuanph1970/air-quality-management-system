@@ -35,6 +35,7 @@ from playwright.async_api import (
     async_playwright,
     Error as PlaywrightError,
 )
+from playwright_stealth import stealth_async
 
 from ..config import config
 
@@ -233,8 +234,14 @@ class EnvisoftClient:
     # Lifecycle
     # ──────────────────────────────────────────────────────────────────────────
 
-    NAV_TIMEOUT = 120_000   # 2 minutes — container CPU can be slow
-    MAX_RETRIES = 3          # retry on transient network/timeout failures
+    NAV_TIMEOUT = 120_000    # 2 minutes — container CPU can be slow
+    MAX_RETRIES = 3           # retry on transient network/timeout failures
+
+    # Login retry — Envisoft sometimes needs 4-5 button clicks before the
+    # dashboard appears. Poll for button disappearance after each click.
+    _LOGIN_MAX_CLICKS = 6         # max button clicks before raising
+    _LOGIN_POLL_INTERVAL = 5_000  # ms between success checks
+    _LOGIN_CLICK_TIMEOUT = 180_000  # ms to wait per click before re-clicking
 
     async def start(self) -> None:
         """Launch Playwright, authenticate, navigate to data page (with retries)."""
@@ -247,15 +254,31 @@ class EnvisoftClient:
                 self._pw = await async_playwright().start()
                 self._browser = await self._pw.chromium.launch(
                     headless=True,
-                    args=["--disable-blink-features=AutomationControlled"],
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                        "--window-size=1920,1080",
+                    ],
                 )
                 self._context = await self._browser.new_context(
                     http_credentials={
                         "username": config.ENVISOFT_BASIC_USER,
                         "password": config.ENVISOFT_BASIC_PASS,
-                    }
+                    },
+                    user_agent=(
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0.0.0 Safari/537.36"
+                    ),
+                    viewport={"width": 1920, "height": 1080},
+                    locale="vi-VN",
                 )
                 self._page = await self._context.new_page()
+                self._page.set_default_timeout(self.NAV_TIMEOUT)
+                await stealth_async(self._page)
 
                 await self._login_via_iframe()
                 await self._navigate_to_data_page()
@@ -306,7 +329,14 @@ class EnvisoftClient:
     # ──────────────────────────────────────────────────────────────────────────
 
     async def _login_via_iframe(self) -> None:
-        """Complete 2-layer auth via iframe form."""
+        """Complete 2-layer auth via iframe form.
+
+        Envisoft login is unreliable: the server sometimes accepts credentials
+        but keeps rendering the login form for several minutes. The only
+        reliable signal that login succeeded is the ĐĂNG NHẬP button
+        disappearing from the iframe. We re-fill and re-click up to
+        _LOGIN_MAX_CLICKS times, waiting up to _LOGIN_CLICK_TIMEOUT ms each.
+        """
         logger.info("[AUTH] Navigating to base URL...")
         await self._page.goto(
             f"{config.ENVISOFT_BASE_URL}/",
@@ -316,23 +346,57 @@ class EnvisoftClient:
         await self._page.wait_for_timeout(2000)
 
         frame = self._page.frame_locator("iframe")
-        logger.info("[AUTH] Filling login form in iframe...")
-        await frame.get_by_role("textbox", name="Tên người dùng").fill(
-            config.ENVISOFT_FORM_USER
-        )
-        await frame.get_by_role("textbox", name="Mật khẩu").fill(
-            config.ENVISOFT_FORM_PASS
-        )
+        checks_per_click = self._LOGIN_CLICK_TIMEOUT // self._LOGIN_POLL_INTERVAL
 
-        logger.info("[AUTH] Clicking ĐĂNG NHẬP...")
-        try:
-            async with self._page.expect_navigation(timeout=self.NAV_TIMEOUT):
+        for click_num in range(1, self._LOGIN_MAX_CLICKS + 1):
+            # Re-fill credentials each attempt — form may reset after a failed submission
+            logger.info(f"[AUTH] Filling login form (click {click_num}/{self._LOGIN_MAX_CLICKS})...")
+            try:
+                await frame.get_by_role("textbox", name="Tên người dùng").fill(
+                    config.ENVISOFT_FORM_USER
+                )
+                await frame.get_by_role("textbox", name="Mật khẩu").fill(
+                    config.ENVISOFT_FORM_PASS
+                )
+            except Exception as exc:
+                logger.warning(f"[AUTH] Could not fill credentials: {exc}")
+
+            logger.info(f"[AUTH] Clicking ĐĂNG NHẬP (click {click_num})...")
+            try:
                 await frame.get_by_role("button", name="ĐĂNG NHẬP").click()
-        except Exception as exc:
-            logger.warning(f"[AUTH] Navigation timeout (may have redirected): {exc}")
+            except Exception as exc:
+                logger.warning(f"[AUTH] Button click error: {exc}")
 
-        await self._page.wait_for_timeout(3000)
-        logger.info(f"[AUTH] URL after login: {self._page.url}")
+            # Poll until the login button disappears (dashboard loaded) or timeout
+            for _ in range(checks_per_click):
+                await self._page.wait_for_timeout(self._LOGIN_POLL_INTERVAL)
+                try:
+                    btn_count = await frame.get_by_role(
+                        "button", name="ĐĂNG NHẬP"
+                    ).count()
+                    if btn_count == 0:
+                        logger.info(
+                            f"[AUTH] ✓ Login button gone — dashboard loaded "
+                            f"(click {click_num})"
+                        )
+                        await self._page.wait_for_timeout(2000)
+                        logger.info(f"[AUTH] URL after login: {self._page.url}")
+                        return
+                except Exception:
+                    # Frame navigation replaced the frame — treat as success
+                    logger.info("[AUTH] ✓ Frame changed — login succeeded")
+                    await self._page.wait_for_timeout(2000)
+                    return
+
+            logger.warning(
+                f"[AUTH] Still on login form after "
+                f"{self._LOGIN_CLICK_TIMEOUT // 1000}s (click {click_num}) — retrying..."
+            )
+
+        raise RuntimeError(
+            f"[AUTH] Login failed: still on login form after "
+            f"{self._LOGIN_MAX_CLICKS} click attempts"
+        )
 
     async def _navigate_to_data_page(self) -> None:
         """Navigate to the average-data-by-time page and wait for it to load."""
@@ -639,9 +703,8 @@ class EnvisoftClient:
             List of normalized data records ready for DB insertion.
         """
         # ── Full setup: login + navigate + pre-select (one browser session) ───
+        # start() already calls _login_via_iframe + _navigate_to_data_page internally
         await self.start()
-        await self._login_via_iframe()
-        await self._navigate_to_data_page()
         await self._pre_select_province_and_data_type()
 
         # ── Export this station ───────────────────────────────────────────────

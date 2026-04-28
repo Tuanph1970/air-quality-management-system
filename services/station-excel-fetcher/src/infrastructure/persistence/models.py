@@ -72,6 +72,7 @@ class EnvisoftHourlyReadingModel(Base):
     total_pollutant: Mapped[float | None] = mapped_column(Float, nullable=True)
     atmospheric_pressure: Mapped[float | None] = mapped_column(Float, nullable=True)
     noise_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+    radiation: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Excel reference path
     excel_path: Mapped[str | None] = mapped_column(String(500), nullable=True)

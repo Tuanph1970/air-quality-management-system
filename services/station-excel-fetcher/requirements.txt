@@ -11,6 +11,7 @@ alembic==1.13.2
 
 # Playwright for browser automation
 playwright==1.42.0
+playwright-stealth==1.0.6
 
 # Excel output
 pandas==2.2.1
